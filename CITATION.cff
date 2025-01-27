@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Condorelli"
+    given-names: "Daniele"
+  - family-names: "Furlan"
+    given-names: "Massimiliano"
+title: "Deep Learning to Play Games"
+version: 1.0.0
+date-released: 2023-09-25
+url: "https://github.com/massimilianofurlan/nn_bimatrix_games"
+repository: "https://github.com/massimilianofurlan/nn_bimatrix_games"
