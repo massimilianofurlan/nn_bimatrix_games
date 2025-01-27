@@ -5,10 +5,23 @@
 This is a work in progress. Replication instructions might be broken. 
  
 
+#### Clone repository
+Clone the repository to your local machine using the following command:
+```bash
+git clone https://github.com/massimilianofurlan/nn_bimatrix_games.git
+```
+
+
 #### Python environment
 
+Install Python 3.12 (this is what I am using, other versions may work)
 ```bash
 brew install python3.12
+```
+
+Set up virtual environment 
+```bash
+cd nn_bimatrix_games
 python3.12 -m venv venv
 source venv/bin/activate 
 pip install -r requirements.txt
