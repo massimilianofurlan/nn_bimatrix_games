@@ -1,5 +1,7 @@
 # Code for D. Condorelli and M. Furlan, Deep Learning to Play Games
 
+link to paper: https://arxiv.org/pdf/2310.07867
+
 ## Replication instructions
 
 This is a work in progress. Replication instructions might be broken. 
