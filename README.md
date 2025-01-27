@@ -2,7 +2,8 @@
 
 ## Replication instructions
 
-This is a work in progress. 
+This is a work in progress. Replication instructions might be broken. 
+ 
 
 #### Python environment
 
@@ -98,7 +99,7 @@ Train pair of newtorks on 4 x 4 games (might want to set --log_models=true)
 python -m src.scripts.training.train --batch_size=1024 --gamma=0.9999995 --optimizer=SGD --lr=1 --n_games=4294967296 --config=4x4_default --name=4x4_default
 ```
 
-Train pair of newtorks on 5 x 5 games (might want to set --log_models=true)
+Train pair of networks on 5 x 5 games (might want to set --log_models=true)
 ```bash
 python -m src.scripts.training.train --batch_size=1024 --gamma=0.9999995 --optimizer=SGD --lr=1 --n_games=4294967296 --config=5x5_default --name=5x5_default
 ```
@@ -108,7 +109,7 @@ python -m src.scripts.training.train --batch_size=1024 --gamma=0.9999995 --optim
 
 Comparing a pair of models (model_a must be larger)
 ```bash
-python -m src.scripts.evaluation.evaluate_learning --model_a=3x3_default --model_b=2x2_default --dataset=2x2_default
+python -m src.scripts.evaluation.evaluate_consistency --model_a=3x3_default --model_b=2x2_default --dataset=2x2_default
 ```
 
 
