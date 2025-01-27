@@ -1,0 +1,3 @@
+[submodule "src/utilities/lemke"]
+	path = src/utilities/lemke
+	url = https://github.com/massimilianofurlan/lemke.git
