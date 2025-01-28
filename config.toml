@@ -1,4 +1,17 @@
 
+[2x2_example]
+# bimatrix
+payoffs_space = "sphere_orthogonal"
+game_class = "general_sum"
+# neural network
+model_class = "mlp"
+n_actions = 2
+n_layers = 8
+hidden_dim = 128
+# loss
+ex_ante = true
+p = 2
+
 [2x2_default]
 # bimatrix
 payoffs_space = "sphere_orthogonal"
