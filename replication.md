@@ -1,4 +1,4 @@
-_[28/01/25] This is a work in progress. Replication instructions might be broken. Remove He initialization from mlp layers to replicate results with these commands._
+_[28/01/25] This is a work in progress. Replication instructions might be broken._
 
 #### Training
 

@@ -57,7 +57,7 @@ class MLP_Bimatrix(nn.Module):
         self.activation_fn = nn.ReLU()
 
         # Apply He Initialization to the layers
-        self.apply(self._initialize_weights)
+        # self.apply(self._initialize_weights)
 
     def _initialize_weights(self, module):
         if isinstance(module, nn.Linear):
