@@ -22,7 +22,7 @@ Follow these steps to set up the project environment. You only need to do this o
     ```
 
 2. **Install Python:**  
-   Ensure Python 3.12 is installed. On macOS, you can use Homebrew:
+   Make sure Python is installed. On macOS, you can use Homebrew:
 
     ```bash
     brew install python3.12
@@ -55,11 +55,11 @@ Once these steps are completed, the environment is ready for use.
 
 ## Basic Usage
 
-After completing the installation, ensure the virtual environment is activated and you are in the `nn_bimatrix_games` project folder:
+Make sure you are in the `nn_bimatrix_games` project folder and the virtual environment is activated:
 
 ```bash
-source venv/bin/activate
 cd nn_bimatrix_games
+source venv/bin/activate
 ```
 
 ### (a) Launching Training
@@ -90,7 +90,7 @@ To evaluate a trained model on the evaluation dataset:
 python -m src.scripts.evaluation.evaluate --model=2x2_example --dataset=2x2_example_dataset
 ```
 
-> **Note:** Ensure the `--model` and `--dataset` names match the names used during training and evaluation set generation.
+> **Note:** Make sure that the `--model` and `--dataset` names match the names used during training and evaluation set generation.
 
 ---
 
