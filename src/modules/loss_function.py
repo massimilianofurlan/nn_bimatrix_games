@@ -64,11 +64,11 @@ class Loss:
         regret_values = self.regret(G, x, y)
         # compute loss 
         if self.ex_ante:
-            loss_values = (regret_values ** self.p).mean() / self.p
+            loss_values = (regret_values ** self.p).mean()
         else:
             # sample opponent's strategy
             y_ex_post = torch.zeros_like(y).scatter_(1, torch.multinomial(y, 1), 1.0)
             regret_values_ex_post = self.regret(G, x, y_ex_post)
-            loss_values = (regret_values_ex_post ** self.p).mean() / self.p
+            loss_values = (regret_values_ex_post ** self.p).mean()
         # return regret values and mean loss value over the batch
         return regret_values, loss_values.mean()
