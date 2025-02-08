@@ -6,7 +6,7 @@ import copy
 import torch.optim as optim
 from torch.optim.lr_scheduler import ExponentialLR
 
-from src.utilities.io_utils import display_info, select_item
+from src.utilities.io_utils import display_info, select_item, save_metadata
 from src.modules.mlp import MLP_Bimatrix
 
 def initialize_model(config, device):
@@ -37,43 +37,42 @@ def initialize_scheduler(optimizer, gamma):
 def generate_metadata(config, args):
     # generate metadata
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    bimatrix_metadata = {
+    trainset_metadata = {
+        'n_actions': config['n_actions'],
+        'n_games': args.n_games,
         'payoffs_space': config['bimatrix']['payoffs_space'],
         'game_class': config['bimatrix']['game_class'],
         'normal_vectors': config['bimatrix']['normal_vectors'],
     }
     model1_metadata = {
+        'n_actions': config['n_actions'],
         'model_class': config['model1']['model_class'],
         'n_layers': config['model1']['n_layers'],
         'hidden_dim': config['model1']['hidden_dim'],
         'n_params': config['model1']['n_params'],
     }
     model2_metadata = {
+        'n_actions': config['n_actions'],
         'model_class': config['model2']['model_class'],
         'n_layers': config['model2']['n_layers'],
         'hidden_dim': config['model2']['hidden_dim'],
         'n_params': config['model2']['n_params'],
     }
     optim_metadata = {
+        'batch_size': args.batch_size,
         'learning_rate': args.lr,
         'gamma': args.gamma,
         'optimization_steps': args.n_games // args.batch_size,
         'optimizer': args.optimizer,
-    }
-    loss_metadata = {
         'ex_ante': config['loss']['ex_ante'],
         'p': config['loss']['p'],
     }
     metadata = {
         'timestamp': timestamp,
-        'n_actions': config['n_actions'],
-        **bimatrix_metadata,
+        'training_set': trainset_metadata, 
         'model1': model1_metadata, 
         'model2': model2_metadata,
-        'n_games': args.n_games,
-        'batch_size': args.batch_size,
-        **optim_metadata,
-        **loss_metadata,
+        'optimization': optim_metadata,
         'seed': args.seed,
     }
     return metadata, timestamp
@@ -92,44 +91,43 @@ def initialize_weigths(model1, model2, init_model):
 def select_models(model_dir = None, device='cpu'):
     """Allow user to select a model and load its testing set."""
     if not model_dir:
-        model_info = display_info('models', 'simulation_metadata.json')
+        model_info = display_info('models', 'metadata.json')
         model_dir, _ = select_item(model_info)
-    with open(f'models/{model_dir}/simulation_metadata.json', 'r') as f:
-        simulation_metadata = json.load(f)
-    model1 = load_model(simulation_metadata, f'models/{model_dir}/model1.pth', device)
-    model2 = load_model(simulation_metadata, f'models/{model_dir}/model2.pth', device)
-    return  model1, model2, simulation_metadata, model_dir
+    with open(f'models/{model_dir}/metadata.json', 'r') as f:
+        metadata = json.load(f)
+    model1 = load_model(metadata['model1'], f'models/{model_dir}/model1.pth', device)
+    model2 = load_model(metadata['model2'], f'models/{model_dir}/model2.pth', device)
+    return  model1, model2, metadata, model_dir
 
-def load_model(simulation_metadata, model_path, device='cpu'):
+def load_model(model_metadata, model_path, device='cpu'):
     """Load a specific model and its metadata from a model directory."""
-    if simulation_metadata['model_class'] == "mlp":
-        model = MLP_Bimatrix(n_actions=simulation_metadata['n_actions'],
-                             hidden_dim=simulation_metadata['hidden_dim'],
-                             n_layers=simulation_metadata['n_layers']).to(device)
+    if model_metadata['model_class'] == "mlp":
+        model = MLP_Bimatrix(n_actions=model_metadata['n_actions'],
+                             hidden_dim=model_metadata['hidden_dim'],
+                             n_layers=model_metadata['n_layers']).to(device)
     # Load the model weights
     model_weigths = torch.load(model_path, map_location=torch.device(device), weights_only=True)['model_state_dict']
     model.load_state_dict(model_weigths)
     return model
 
-def save_model(model, base_dir, file_name='model.pth', metadata=None, verbose=False):
+def save_model(model, base_dir, file_name='model', metadata=None, verbose=False):
     """Save model (and optionally metadata) to base_dir"""
-
+    
     # Create the base directory for models if it doesn't exist
     os.makedirs(base_dir, exist_ok=True)
     
     # Define the path for the model and metadata files
-    path = os.path.join(base_dir, file_name)
+    path = os.path.join(base_dir, f'{file_name}.pth')
     
     # Save the model
     torch.save({'model_state_dict': model.state_dict()}, path)
     
     # Save model metadata if provided
     if metadata is not None:
-        metadata_file_name = os.path.join(base_dir, "simulation_metadata.json")
-        with open(metadata_file_name, 'w') as f:
-            json.dump(metadata, f, indent=4)
-
+        metadata_file_name = os.path.join(base_dir, f"{file_name}_metadata.json")
+        save_metadata(metadata_file_name, metadata)
+    
     if verbose:
         print(f"Model saved in {path}")
-
+    
     return base_dir

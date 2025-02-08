@@ -17,9 +17,14 @@ def list_dirs(base_dir):
     """List all unique directories within the specified base directory."""
     return [d for d in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, d))]
 
-def print_metadata(metadata):
+def print_metadata(**metadata):
     for param, value in metadata.items():
-        print(f"  {param}: {value}")
+        if isinstance(value, dict):  # If the value is a nested dictionary, print its contents
+            print(f"{param}:")
+            for sub_param, sub_value in value.items():
+                print(f"  {sub_param}: {sub_value}")
+        else:
+            print(f"{param}: {value}")
 
 def log_metadata(file_path, metadata, intro, w='w'):
     with open(f'{file_path}', w) as f:
@@ -28,6 +33,10 @@ def log_metadata(file_path, metadata, intro, w='w'):
             f.write(f"  {param}: {value}\n")
         f.write(f"\n")
 
+def save_metadata(file_path, metadata, w='w'):
+    with open(file_path, 'w') as f:
+        json.dump(metadata, f, indent=4)
+
 def load_metadata(base_dir, directory, metadata_file):
     metadata_path = os.path.join(base_dir, directory, metadata_file)
     with open(metadata_path, 'r') as f:
@@ -35,7 +44,7 @@ def load_metadata(base_dir, directory, metadata_file):
     return metadata
 
 def preview_dataset(dataset_metadata, dataset):
-    print_metadata(dataset_metadata)
+    print_metadata(**dataset_metadata)
     # Display a game from the dataset
     print("\nExample game:")
     print_bimatrix_game(*dataset[0])
@@ -52,7 +61,7 @@ def display_info(base_dir, metadata_file):
             metadata = load_metadata(base_dir, directory, metadata_file)
             info.append((directory, metadata))
             print(f"{i}) {directory}:")
-            print_metadata(metadata)
+            print_metadata(**metadata)
             print()
             i += 1
     return info

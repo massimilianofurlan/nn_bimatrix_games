@@ -1,7 +1,7 @@
 import argparse
 import torch
 import os
-from src.utilities.io_utils import clear, read_config, print_metadata, save_to_pickle, process_config
+from src.utilities.io_utils import clear, read_config, print_metadata, save_to_pickle, process_config, save_metadata
 from src.utilities.model_utils import (save_model, initialize_model, initialize_optimizer, 
                                         initialize_scheduler, generate_metadata, initialize_weigths)
 from src.utilities.viz_utils import plot_training_loss
@@ -52,20 +52,21 @@ def main():
     rand_bimatrix = BimatrixSampler(**config['bimatrix'], set_games = training_set, device=device)
 
     # Generate metadata
-    simulation_metadata, simulation_timestamp = generate_metadata(config, args)
+    metadata, timestamp = generate_metadata(config, args)
     print("\nModel Metadata:")
-    print_metadata(simulation_metadata)
+    print_metadata(**metadata)
 
     # Train the model
     print("\nStarting training...\n")
-    timestamp = simulation_timestamp * args.log_models
     model1, model2, avg_regrets = train(model1, optimizer1, scheduler1, model2, optimizer2, scheduler2,
-                                        args.n_games, args.batch_size, loss_function, rand_bimatrix, timestamp)
+                                        args.n_games, args.batch_size, loss_function, rand_bimatrix, 
+                                        timestamp * args.log_models)
 
-    # Save trained model
-    model_path = os.path.join("models", args.name if args.name else simulation_timestamp)
-    save_model(model1, model_path, file_name="model1.pth", metadata=simulation_metadata, verbose=True)
-    save_model(model2, model_path, file_name="model2.pth", verbose=True)
+    # Save trained models and simulation metadata
+    model_path = os.path.join("models", args.name if args.name else timestamp)
+    save_model(model1, model_path, file_name="model1", metadata=metadata['model1'], verbose=True)
+    save_model(model2, model_path, file_name="model2", metadata=metadata['model2'], verbose=True)
+    save_metadata(f'{model_path}/metadata.json', metadata)
 
     # Save regrets and grad norms
     filename = f'avg_regrets_{args.init_model}.pkl' if args.init_model else 'avg_regrets.pkl'

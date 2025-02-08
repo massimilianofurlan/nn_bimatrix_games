@@ -243,7 +243,7 @@ def main():
 
     # visualize to terminal
     print(f"\nModel: ")
-    print_metadata(simulation_metadata)
+    print_metadata(**simulation_metadata)
     print(f"\nEvaluating on: ")
     preview_dataset(dataset_metadata, testing_set)
 
@@ -251,7 +251,7 @@ def main():
     eval_dir = os.path.join("models", model_dir, dataset_dir)
     os.makedirs(eval_dir, exist_ok=True)
     eval_file = f'{eval_dir}/evaluation.txt'
-    log_metadata(eval_file, simulation_metadata, "Model: ")
+    log_metadata(eval_file, simulation_metadata, "Models: ")
     log_metadata(eval_file, dataset_metadata, "Dataset: ", 'a')
 
     f = open(eval_file, 'a')
@@ -327,6 +327,7 @@ def main():
     #signs = np.sign(lower_spheres[:,:,n_payoffs-3:n_payoffs-1])
     #halfsphere_mask = np.all(signs == signs[:, :, [0]], axis=(1,2))
 
+    '''
     if 'hemi' in simulation_metadata['payoffs_space'] or 'half' in simulation_metadata['payoffs_space']:
         n_payoffs = dataset_metadata['n_actions']**2
         v = np.ones(n_payoffs)    
@@ -376,6 +377,7 @@ def main():
         print_and_log('\n\n[[COMPLEMENT HALF SPHERES - 1 PURE NASH EQUILIBRIA ]]', f)
         halfsphere_c_one_pure_nash_mask = np.logical_and(halfsphere_c_mask,one_pure_nash_mask)
         print_evaluation_results(evaluation_output, statistics, halfsphere_c_one_pure_nash_mask, f=f)
+    '''
 
     #print_and_log('\n\n[[COMPLEMENT HALF SPHERES & 0 PURE NASH EQUILIBRIA ]]', f)
     #print_evaluation_results(evaluation_output, statistics, np.logical_and(halfsphere_c_mask,zero_pure_nash_mask), f=f)
