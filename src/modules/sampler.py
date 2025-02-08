@@ -1,22 +1,37 @@
 import torch
 
-# NOTE: this sampler generates bimatrix games of the form (A,B^T)
-
 class BimatrixSampler:
-    def __init__(self, n_actions: int, payoffs_space: str = "sphere_preferences", game_class: str = "general_sum", 
-                       set_games = None, device: str = 'cpu', dtype=torch.float32):
+    def __init__(self, n_actions: int, payoffs_space: str = "sphere_preferences", 
+                       game_class: str = "general_sum", set_games: torch.Tensor | None = None,
+                       v_norms: tuple[torch.Tensor | None, torch.Tensor | None] = (None, None),
+                       device: str = 'cpu', dtype=torch.float32):
+        """
+        A sampler for generating bimatrix games of the form (A, B^T).
+
+        Args:
+            n_actions (int): number of actions per player (>1)
+            payoffs_space (str): space of payoff (sphere, preferences, strategic)
+            game_class (str): type of game (general sum, zero sum, symmetric)
+            set_games (torch.Tensor, optional): optional predefined set of games 
+            v_norms (tuple[torch.Tensor or None, torch.Tensor or None], optional): 
+                normal vectors defining the hyperplanes that partition the space of games,
+                note: they must be vectorized using row-major convention
+            device (str): device
+            dtype (torch.dtype): data type (float32 or float64)
+        """
         self.n_actions = n_actions  
         self.game_class = game_class
         self.payoffs_space = payoffs_space
-        self.device = device
         self.set_games = set_games
+        self.v_norm_A, self.v_norm_B = v_norms
+        self.device = device
         self.dtype = dtype
         
         # number of payoffs for each agent
         self.n_payoffs = self.n_actions**2
-        # householder rotation matrix
+        # householder rotation matrices
         self.Hpr, self.Hbr = self.generate_rotations(self.n_payoffs)
-        
+
         # define matrix sampling function based on payoffs_space
         if self.payoffs_space == 'sphere':
             self.sampler_matrix = self.rand_sphere
@@ -56,19 +71,31 @@ class BimatrixSampler:
             v_target[self.n_actions*k] = torch.linalg.norm(v)  # Move to canonical basis
             w = v - v_target
             H = torch.eye(n, device=self.device, dtype=self.dtype) - 2 * torch.outer(w, w) / torch.dot(w, w)
-            Hbr = H @ Hbr  # Apply the reflection
+            Hbr = H @ Hbr
         return Hpr.requires_grad_(False), Hbr.requires_grad_(False)
-    
+
+    def reflect(self, x, v_norm):
+        # reflect points in x^T v < 0 across the hyperplane orthogonal to v.
+        if v_norm is None:
+            return x
+        # compute inners x^Tv
+        inners = torch.matmul(x, v_norm)
+        # mask positive halfspace x^Tv>0
+        pos_half_mask = inners > 0
+        # reflect points in x^T v < 0 across x^Tv=0 plane x <- x - 2 (x^Tv)v 
+        x[~pos_half_mask] = x[~pos_half_mask] - 2 * torch.outer(inners[~pos_half_mask], self.v_norm)
+        return x
+
     def rand_sphere(self, k, n, r):
         # sample uniformly k points from r-radius sphere in R^{n}
         x = torch.randn((k, n), device=self.device, dtype=self.dtype, requires_grad=False)
         norm = torch.norm(x, dim=1, keepdim=True).clamp_min(1e-8)
         x.div_(norm).mul_(r)
+        # x is uniform in {x \in R^{n} | ||x||=r}
         return x
     
     def rand_preferences_sphere(self, k, n, r):
         # sample uniformly k points from r-radius sphere in the subspace orthogonal to (1,...,1) in R^{n_actions^2}
-        # note: (x)_i has variance 1
         # sample y uniformly from r-radius sphere in R^{n-1}
         y = self.rand_sphere(k, n - 1, r)
         # define z = (y.T,0)
@@ -82,7 +109,6 @@ class BimatrixSampler:
     def rand_strategic_sphere(self, k, n, r):
         # sample uniformly k points from r-radius sphere in the subspace 
         # orthogonal to {(1,0,..),(0,1,0,...),...} (where 1 and 0 are 1xn)
-        # note: (x)_i has variance 1
         # sample y uniformly from r-radius sphere in R^{n-n_actions}
         y = self.rand_sphere(k, n - self.n_actions, r)
         # define z.view(n,n)[n-1,n] = y.view(n,n)
@@ -92,25 +118,29 @@ class BimatrixSampler:
         x = torch.matmul(z, self.Hbr.T)
         # x is uniform in {x \in R^{n} | 1^T x.view(n,n)=0, ||x||=r}
         return x
-    
+
     def rand_generalsum_bimatrix(self, batch_size):
         # sample general-sum bimatrix game
         A_vec = self.sampler_matrix(batch_size, self.n_payoffs, self.n_actions)
         B_vec = self.sampler_matrix(batch_size, self.n_payoffs, self.n_actions)
-        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # transpose because torch is col-major
-        B = B_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # transpose because torch is col-major
+        A_vec = self.reflect(A_vec, self.v_norm_A)
+        B_vec = self.reflect(B_vec, self.v_norm_B)
+        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # torch is row-major
+        B = B_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # torch is row-major
         return A, B
     
     def rand_zerosum_bimatrix(self, batch_size):
         # sample zero-sum bimatrix game
         A_vec = self.sampler_matrix(batch_size, self.n_payoffs, self.n_actions)
-        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # transpose because torch is col-major
+        A_vec = self.reflect(A_vec, self.v_norm_A)
+        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # torch is row-major
         return A, -A
     
     def rand_symmetric_bimatrix(self, batch_size):
         # sample symmetric bimatrix game
         A_vec = self.sampler_matrix(batch_size, self.n_payoffs, self.n_actions)
-        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # transpose because torch is col-major
+        A_vec = self.reflect(A_vec, self.v_norm_A)
+        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # torch is row-major
         return A, A.transpose(1,2)
     
     def rand_from_set_bimatrix(self, batch_size):

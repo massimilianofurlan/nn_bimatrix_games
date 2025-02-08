@@ -3,7 +3,7 @@ from src.modules.sampler import BimatrixSampler
 
 def test_bimatrix_sampler():
     n_actions = 3
-    batch_size = 2**24  # Large batch for statistical robustness
+    batch_size = 2**25
 
     def print_result(test_name, passed, expected, actual):
         """Prints test results with expected and actual values."""
