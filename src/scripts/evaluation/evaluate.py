@@ -224,7 +224,7 @@ def main():
 
     # load models
     os.system('cls' if os.name == 'nt' else 'clear')
-    model1, model2, model_metadata, model_dir = select_models(model_dir = args.model, device=device)
+    model1, model2, simulation_metadata, model_dir = select_models(model_dir = args.model, device=device)
     model1.eval()
     model2.eval()
 
@@ -243,7 +243,7 @@ def main():
 
     # visualize to terminal
     print(f"\nModel: ")
-    print_metadata(model_metadata)
+    print_metadata(simulation_metadata)
     print(f"\nEvaluating on: ")
     preview_dataset(dataset_metadata, testing_set)
 
@@ -251,7 +251,7 @@ def main():
     eval_dir = os.path.join("models", model_dir, dataset_dir)
     os.makedirs(eval_dir, exist_ok=True)
     eval_file = f'{eval_dir}/evaluation.txt'
-    log_metadata(eval_file, model_metadata, "Model: ")
+    log_metadata(eval_file, simulation_metadata, "Model: ")
     log_metadata(eval_file, dataset_metadata, "Dataset: ", 'a')
 
     f = open(eval_file, 'a')
@@ -289,9 +289,9 @@ def main():
     one_pure_nash_mask = statistics['n_pure_nash'] == 1
     print_evaluation_results(evaluation_output, statistics, one_pure_nash_mask, f=f)
 
-    #print_and_log('\n\n[[[ > 1 PURE NASH EQUILIBRIA ]]]', f)
-    #multiple_pure_nash_mask = statistics['n_pure_nash'] > 1
-    #print_evaluation_results(evaluation_output, statistics, multiple_pure_nash_mask, f=f)
+    print_and_log('\n\n[[[ >= 1 PURE NASH EQUILIBRIA ]]]', f)
+    multiple_pure_nash_mask = statistics['n_pure_nash'] >= 1
+    print_evaluation_results(evaluation_output, statistics, multiple_pure_nash_mask, f=f)
 
     print_and_log(f'\n\n[[[ > 1 NASH EQUILIBRIUM & IS {2*gamma}-NASH ]]]', f)
     multiple_nash_mask = statistics['n_nash'] > 1
@@ -327,7 +327,7 @@ def main():
     #signs = np.sign(lower_spheres[:,:,n_payoffs-3:n_payoffs-1])
     #halfsphere_mask = np.all(signs == signs[:, :, [0]], axis=(1,2))
 
-    if 'hemi' in model_metadata['payoffs_space'] or 'half' in model_metadata['payoffs_space']:
+    if 'hemi' in simulation_metadata['payoffs_space'] or 'half' in simulation_metadata['payoffs_space']:
         n_payoffs = dataset_metadata['n_actions']**2
         v = np.ones(n_payoffs)    
         v[:n_payoffs//2] = -1.0
@@ -335,12 +335,12 @@ def main():
         A_vec = testing_set[:,0,:,:].reshape(-1, n_payoffs)
         B_vec = testing_set[:,1,:,:].reshape(-1, n_payoffs)
         mask = None
-        if model_metadata['payoffs_space'] == 'hemisphere_orthogonal':
+        if simulation_metadata['payoffs_space'] == 'hemisphere_orthogonal':
             # compute hemisphere mask
             A_inners = np.matmul(A_vec, v)
             B_inners = np.matmul(B_vec, v)
             mask = np.logical_and(A_inners>0,B_inners>0)
-        if model_metadata['payoffs_space'] == 'halfsphere_orthogonal':
+        if simulation_metadata['payoffs_space'] == 'halfsphere_orthogonal':
             # compute halfsphere mask
             u = np.ones(n_payoffs)    
             u[::2] = -1.0

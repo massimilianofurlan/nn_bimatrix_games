@@ -49,21 +49,21 @@ if __name__ == "__main__":
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
 
-    # load model_metadata
+    # load simulation_metadata
     os.system('cls' if os.name == 'nt' else 'clear')
-    model1, model2, model_metadata, model_dir = select_models(model_dir = args.model, device=device)
+    model1, model2, simulation_metadata, model_dir = select_models(model_dir = args.model, device=device)
     model1.eval()
     model2.eval()
 
     # visualize to terminal
     print(f"\nModel: ")
-    print_metadata(model_metadata)
+    print_metadata(simulation_metadata)
 
 
     # all done
     print(f"All done")
 
-    n_actions_model = model_metadata['n_actions']
+    n_actions_model = simulation_metadata['n_actions']
     games = read_games_from_file("games.txt")
     n_traces = 10000
 
@@ -113,8 +113,8 @@ if __name__ == "__main__":
             G_transpose = transpose_game(G)
 
             # get actions
-            #G_transformed = transform_batch_games(G.clone(),n_actions)
-            #G_transpose_transformed = transform_batch_games(G_transpose.clone(),n_actions)
+            G = transform_batch_games(G.clone(),n_actions)
+            G_transpose = transform_batch_games(G_transpose.clone(),n_actions)
             p = model1(G)
             q = model2(G_transpose)
 

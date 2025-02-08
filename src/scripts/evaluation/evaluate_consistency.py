@@ -26,8 +26,8 @@ torch.manual_seed(1)
 
 # load models
 os.system('cls' if os.name == 'nt' else 'clear')
-model1_a, _, model_metadata_a, model_dir = select_models(model_dir=args.model_a, device = device)
-model1_b, _, model_metadata_b, model_dir = select_models(model_dir=args.model_b, device = device)
+model1_a, _, simulation_metadata_a, model_dir = select_models(model_dir=args.model_a, device = device)
+model1_b, _, simulation_metadata_b, model_dir = select_models(model_dir=args.model_b, device = device)
 model1_a.eval()
 model1_b.eval()
 
@@ -35,11 +35,11 @@ model1_b.eval()
 os.system('cls' if os.name == 'nt' else 'clear')
 testing_set, dataset_metadata, dataset_dir = select_dataset(dataset_dir=args.dataset)
 
-if model_metadata_a['n_actions'] <= model_metadata_b['n_actions']:
+if simulation_metadata_a['n_actions'] <= simulation_metadata_b['n_actions']:
     print('model a must be bigger than model b')
     exit()
 
-if dataset_metadata['n_actions'] != model_metadata_a['n_actions']:
+if dataset_metadata['n_actions'] != simulation_metadata_a['n_actions']:
     print('dataset n_actions must be equal to model a n_actions')
     exit()
 
@@ -65,16 +65,16 @@ n_games, n_players, n_actions, _ = games.size()
 
 # visualize to terminal
 print(f"\nModel a: ")
-print_metadata(model_metadata_a)
+print_metadata(simulation_metadata_a)
 print(f"\nModel b: ")
-print_metadata(model_metadata_b)
+print_metadata(simulation_metadata_b)
 print(f"\nEvaluating on: ")
 preview_dataset(dataset_metadata, testing_set)
 print()
 
 # log to file 
-log_metadata(eval_file, model_metadata_a, "Model a: ")
-log_metadata(eval_file, model_metadata_b, "Model b: ")
+log_metadata(eval_file, simulation_metadata_a, "Model a: ")
+log_metadata(eval_file, simulation_metadata_b, "Model b: ")
 log_metadata(eval_file, dataset_metadata, "Dataset: ", 'a')
 
 
@@ -83,8 +83,8 @@ log_metadata(eval_file, dataset_metadata, "Dataset: ", 'a')
 
 quantiles = torch.tensor([0.25, 0.5, 0.75, 0.90, 0.95, 0.99], device=device)
 
-n_actions_a = model_metadata_a['n_actions']
-n_actions_b = model_metadata_b['n_actions']
+n_actions_a = simulation_metadata_a['n_actions']
+n_actions_b = simulation_metadata_b['n_actions']
 delta_n_actions = n_actions_a - n_actions_b
 dominated_mask = torch.tensor(np.array(labels['dominated_mask']), device=device)
 dominance_reduced_mask = np.all(statistics['n_dominated'] == [delta_n_actions,delta_n_actions], axis=1)

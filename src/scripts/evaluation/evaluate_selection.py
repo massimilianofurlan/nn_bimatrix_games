@@ -15,9 +15,9 @@ parser.add_argument('--dataset', type=str, default='2x2_default_avon', help="Dat
 # Process configs
 args = parser.parse_args()
 
-# load model_metadata
+# load simulation_metadata
 os.system('cls' if os.name == 'nt' else 'clear')
-model1, model2, model_metadata, model_dir = select_models(model_dir = args.model)
+model1, model2, simulation_metadata, model_dir = select_models(model_dir = args.model)
 model1.eval()
 model2.eval()
 
@@ -27,7 +27,7 @@ testing_set, dataset_metadata, dataset_dir = select_dataset(dataset_dir=args.dat
 
 # visualize to terminal
 print(f"\nModel: ")
-print_metadata(model_metadata)
+print_metadata(simulation_metadata)
 print(f"\nEvaluating on: ")
 preview_dataset(dataset_metadata, testing_set)
 
@@ -39,7 +39,7 @@ if not os.path.exists(eval_dir):
 
 # evaluation file
 eval_file = f'{eval_dir}/evaluation_selection.txt'
-log_metadata(eval_file, model_metadata, "Model: ")
+log_metadata(eval_file, simulation_metadata, "Model: ")
 log_metadata(eval_file, dataset_metadata, "Dataset: ", 'a')
 
 # load labels
