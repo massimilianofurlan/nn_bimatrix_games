@@ -14,7 +14,6 @@ class BimatrixSampler:
             set_games (torch.Tensor, optional): optional predefined set of games 
             normal_vectors (tuple[torch.Tensor or None, torch.Tensor or None], optional): 
                 normal vectors defining the hyperplanes that partition the space of games,
-                note: they must be vectorized using row-major convention
             device (str): device
             dtype (torch.dtype): data type (float32 or float64)
         """
@@ -22,7 +21,7 @@ class BimatrixSampler:
         self.game_class = game_class
         self.payoffs_space = payoffs_space
         self.set_games = set_games
-        self.v_norm_A, self.v_norm_B = torch.tensor(normal_vectors)
+        self.normal_vectors = normal_vectors
         self.device = device
         self.dtype = dtype
         
@@ -30,7 +29,9 @@ class BimatrixSampler:
         self.n_payoffs = self.n_actions**2
         # householder rotation matrices
         self.Hpr, self.Hbr = self.generate_rotations(self.n_payoffs)
-
+        # normal vectors
+        self.v_norm_A, self.v_norm_B = self.generate_normal_vectors(self.normal_vectors)
+        
         # define matrix sampling function based on payoffs_space (samples A)
         if self.payoffs_space == 'sphere':
             self.sampler_matrix = self.rand_sphere
@@ -67,12 +68,20 @@ class BimatrixSampler:
             v = torch.zeros(n, device=self.device, dtype=self.dtype)
             v[k * self.n_actions:(k + 1) * self.n_actions] = 1.0
             v_target = torch.zeros_like(v)
-            v_target[self.n_actions*k] = torch.linalg.norm(v)  # Move to canonical basis
+            v_target[self.n_actions*k] = torch.linalg.norm(v)
             w = v - v_target
             H = torch.eye(n, device=self.device, dtype=self.dtype) - 2 * torch.outer(w, w) / torch.dot(w, w)
             Hbr = H @ Hbr
         return Hpr.requires_grad_(False), Hbr.requires_grad_(False)
-
+    
+    def generate_normal_vectors(self, normal_vectors):
+        v_norm_A, v_norm_B = normal_vectors
+        v_norm_A = torch.tensor(v_norm_A, device=self.device, dtype=self.dtype)
+        v_norm_B = torch.tensor(v_norm_B, device=self.device, dtype=self.dtype)
+        v_norm_A /= 1 if v_norm_A.numel() == 0 else torch.linalg.norm(v_norm_A)
+        v_norm_B /= 1 if v_norm_B.numel() == 0 else torch.linalg.norm(v_norm_B)
+        return v_norm_A.requires_grad_(False), v_norm_B.requires_grad_(False)
+    
     def reflect(self, x, v_norm):
         # reflect points in x^T v < 0 across the hyperplane orthogonal to v.
         if v_norm.numel() == 0:
@@ -82,9 +91,9 @@ class BimatrixSampler:
         # mask positive halfspace x^Tv>0
         pos_half_mask = inners > 0
         # reflect points in x^T v < 0 across x^Tv=0 plane x <- x - 2 (x^Tv)v 
-        x[~pos_half_mask] = x[~pos_half_mask] - 2 * torch.outer(inners[~pos_half_mask], self.v_norm)
+        x[~pos_half_mask] = x[~pos_half_mask] - 2 * torch.outer(inners[~pos_half_mask], v_norm)
         return x
-
+    
     def rand_sphere(self, k, n, r):
         # sample uniformly k points from r-radius sphere in R^{n}
         x = torch.randn((k, n), device=self.device, dtype=self.dtype, requires_grad=False)
@@ -117,7 +126,7 @@ class BimatrixSampler:
         x = torch.matmul(z, self.Hbr.T)
         # x is uniform in {x \in R^{n} | 1^T x.view(n,n)=0, ||x||=r}
         return x
-
+    
     def rand_generalsum_bimatrix(self, batch_size):
         # sample general-sum bimatrix game
         A_vec = self.sampler_matrix(batch_size, self.n_payoffs, self.n_actions)
