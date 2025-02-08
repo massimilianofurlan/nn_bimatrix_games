@@ -3,17 +3,16 @@ import torch
 class BimatrixSampler:
     def __init__(self, n_actions: int, payoffs_space: str = "sphere_preferences", 
                        game_class: str = "general_sum", set_games: torch.Tensor | None = None,
-                       v_norms: tuple[torch.Tensor | None, torch.Tensor | None] = (None, None),
-                       device: str = 'cpu', dtype=torch.float32):
+                       normal_vectors = [[], []], device: str = 'cpu', dtype=torch.float32):
         """
-        A sampler for generating bimatrix games of the form (A, B^T).
+        A sampler for generating bimatrix games G = (A, B).
 
         Args:
             n_actions (int): number of actions per player (>1)
             payoffs_space (str): space of payoff (sphere, preferences, strategic)
             game_class (str): type of game (general sum, zero sum, symmetric)
             set_games (torch.Tensor, optional): optional predefined set of games 
-            v_norms (tuple[torch.Tensor or None, torch.Tensor or None], optional): 
+            normal_vectors (tuple[torch.Tensor or None, torch.Tensor or None], optional): 
                 normal vectors defining the hyperplanes that partition the space of games,
                 note: they must be vectorized using row-major convention
             device (str): device
@@ -23,7 +22,7 @@ class BimatrixSampler:
         self.game_class = game_class
         self.payoffs_space = payoffs_space
         self.set_games = set_games
-        self.v_norm_A, self.v_norm_B = v_norms
+        self.v_norm_A, self.v_norm_B = torch.tensor(normal_vectors)
         self.device = device
         self.dtype = dtype
         
@@ -32,7 +31,7 @@ class BimatrixSampler:
         # householder rotation matrices
         self.Hpr, self.Hbr = self.generate_rotations(self.n_payoffs)
 
-        # define matrix sampling function based on payoffs_space
+        # define matrix sampling function based on payoffs_space (samples A)
         if self.payoffs_space == 'sphere':
             self.sampler_matrix = self.rand_sphere
         elif self.payoffs_space == 'sphere_preferences':
@@ -40,7 +39,7 @@ class BimatrixSampler:
         elif self.payoffs_space == 'sphere_strategic':
             self.sampler_matrix = self.rand_strategic_sphere
         
-        # define bimatrix sampling function based on game class
+        # define bimatrix sampling function based on game class (samples A,B)
         if self.game_class == "general_sum":
             self.sampler_bimatrix = self.rand_generalsum_bimatrix
         elif self.game_class == "zero_sum":
@@ -76,7 +75,7 @@ class BimatrixSampler:
 
     def reflect(self, x, v_norm):
         # reflect points in x^T v < 0 across the hyperplane orthogonal to v.
-        if v_norm is None:
+        if v_norm.numel() == 0:
             return x
         # compute inners x^Tv
         inners = torch.matmul(x, v_norm)
@@ -126,7 +125,7 @@ class BimatrixSampler:
         A_vec = self.reflect(A_vec, self.v_norm_A)
         B_vec = self.reflect(B_vec, self.v_norm_B)
         A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # torch is row-major
-        B = B_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # torch is row-major
+        B = B_vec.view(batch_size, self.n_actions, self.n_actions)
         return A, B
     
     def rand_zerosum_bimatrix(self, batch_size):
@@ -144,7 +143,7 @@ class BimatrixSampler:
         return A, A.transpose(1,2)
     
     def rand_from_set_bimatrix(self, batch_size):
-        # sample bimatrix game from set_games with convention (A,B^T)
+        # sample bimatrix game from set_games {(A,B)_k}
         idx = torch.randint(self.set_games.size(0), (batch_size,))
         A, B = self.set_games[idx][:,0,:,:], self.set_games[idx][:,1,:,:]
         return A, B
