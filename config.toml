@@ -1,210 +1,327 @@
 
+# -------------------------------------
+
 [2x2_example]
-# bimatrix
-payoffs_space = "sphere_orthogonal"
-game_class = "general_sum"
-# neural network
-model_class = "mlp"
+# games dimension
 n_actions = 2
+# bimatrix
+[2x2_example.bimatrix]
+payoffs_space = "sphere_strategic"
+game_class = "general_sum"
+normal_vectors = [[], []]
+# network player 1
+[2x2_example.model1]
+model_class = "mlp"
 n_layers = 8
 hidden_dim = 128
-# loss
+# network player 2
+[2x2_example.model2]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 128
+# loss function
+[2x2_example.loss]
 ex_ante = true
 p = 2
+
+# -------------------------------------
 
 [2x2_default]
-# bimatrix
-payoffs_space = "sphere_orthogonal"
-game_class = "general_sum"
-# neural network
-model_class = "mlp"
+# games dimension
 n_actions = 2
-n_layers = 8
-hidden_dim = 512
-# loss
-ex_ante = true
-p = 2
-
-[3x3_default]
 # bimatrix
-payoffs_space = "sphere_orthogonal"
+[2x2_default.bimatrix]
+payoffs_space = "sphere_preferences"
 game_class = "general_sum"
-# neural network
+normal_vectors = [[], []]
+# network player 1
+[2x2_default.model1]
 model_class = "mlp"
-n_actions = 3
-n_layers = 8
-hidden_dim = 2048
-#loss
-ex_ante = true
-p = 2
-
-[4x4_default]
-# bimatrix
-payoffs_space = "sphere_orthogonal"
-game_class = "general_sum"
-# neural network
-model_class = "mlp"
-n_actions = 4
-n_layers = 8
-hidden_dim = 2048
-#loss
-ex_ante = true
-p = 2
-
-[5x5_default]
-# bimatrix
-payoffs_space = "sphere_orthogonal"
-game_class = "general_sum"
-# neural network
-model_class = "mlp"
-n_actions = 5
-n_layers = 8
-hidden_dim = 2048
-#loss
-ex_ante = true
-p = 2
-
-[2x2_halved_neurons]
-# bimatrix
-payoffs_space = "sphere_orthogonal"
-game_class = "general_sum"
-# neural network
-model_class = "mlp"
-n_actions = 2
 n_layers = 8
 hidden_dim = 256
-# loss
+# network player 2
+[2x2_default.model2]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 256
+# loss function
+[2x2_default.loss]
 ex_ante = true
 p = 2
 
-[2x2_doubled_neurons]
+# -------------------------------------
+
+[3x3_default]
+# games dimension
+n_actions = 3
 # bimatrix
-payoffs_space = "sphere_orthogonal"
+[3x3_default.bimatrix]
+payoffs_space = "sphere_preferences"
 game_class = "general_sum"
-# neural network
+normal_vectors = [[], []]
+# network player 1
+[3x3_default.model1]
 model_class = "mlp"
-n_actions = 2
+n_layers = 8
+hidden_dim = 512
+# network player 2
+[3x3_default.model2]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 512
+# loss function
+[3x3_default.loss]
+ex_ante = true
+p = 2
+
+# -------------------------------------
+
+[4x4_default]
+# games dimension
+n_actions = 4
+# bimatrix
+[4x4_default.bimatrix]
+payoffs_space = "sphere_preferences"
+game_class = "general_sum"
+normal_vectors = [[], []]
+# network player 1
+[4x4_default.model1]
+model_class = "mlp"
 n_layers = 8
 hidden_dim = 1024
-# loss
-ex_ante = true
-p = 2
-
-[3x3_doubled_neurons]
-# bimatrix
-payoffs_space = "sphere_orthogonal"
-game_class = "general_sum"
-# neural network
+# network player 2
+[4x4_default.model2]
 model_class = "mlp"
-n_actions = 3
 n_layers = 8
-hidden_dim = 4096
-#loss
+hidden_dim = 1024
+# loss function
+[4x4_default.loss]
 ex_ante = true
 p = 2
 
+# -------------------------------------
 
-[2x2_halfsphere]
+[5x5_default]
+# games dimension
+n_actions = 5
 # bimatrix
-payoffs_space = "halfsphere_orthogonal"
+[5x5_default.bimatrix]
+payoffs_space = "sphere_preferences"
 game_class = "general_sum"
-# neural network
+normal_vectors = [[], []]
+# network player 1
+[5x5_default.model1]
 model_class = "mlp"
+n_layers = 8
+hidden_dim = 1024
+# network player 2
+[5x5_default.model2]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 1024
+# loss function
+[5x5_default.loss]
+ex_ante = true
+p = 2
+
+# -------------------------------------
+
+[2x2_halved_neurons]
+# games dimension
 n_actions = 2
+# bimatrix
+[halved_neurons.bimatrix]
+payoffs_space = "sphere_preferences"
+game_class = "general_sum"
+normal_vectors = [[], []]
+# network player 1
+[halved_neurons.model1]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 128
+# network player 2
+[halved_neurons.model2]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 128
+# loss function
+[2x2_halved_neurons.loss]
+ex_ante = true
+p = 2
+
+# -------------------------------------
+
+[2x2_doubled_neurons]
+# games dimension
+n_actions = 2
+# bimatrix
+[2x2_doubled_neurons.bimatrix]
+payoffs_space = "sphere_preferences"
+game_class = "general_sum"
+normal_vectors = [[], []]
+# network player 1
+[2x2_doubled_neurons.model1]
+model_class = "mlp"
 n_layers = 8
 hidden_dim = 512
-# loss
+# network player 2
+[2x2_doubled_neurons.model2]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 512
+# loss function
+[2x2_doubled_neurons.loss]
 ex_ante = true
 p = 2
 
-[2x2_hemisphere]
-# bimatrix
-payoffs_space = "hemisphere_orthogonal"
-game_class = "general_sum"
-# neural network
-model_class = "mlp"
+# -------------------------------------
+
+[2x2_subspace1]
+# games dimension
 n_actions = 2
+# bimatrix
+[2x2_subspace1.bimatrix]
+payoffs_space = "sphere_preferences"
+game_class = "general_sum"
+normal_vectors = [[1,0,1,0], [1,0,1,0]]
+# network player 1
+[2x2_subspace1.model1]
+model_class = "mlp"
 n_layers = 8
-hidden_dim = 512
-# loss
+hidden_dim = 256
+# network player 2
+[2x2_subspace1.model2]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 256
+# loss function
+[2x2_subspace1.loss]
 ex_ante = true
 p = 2
+
+# -------------------------------------
+
+[2x2_subspace2]
+# games dimension
+n_actions = 2
+# bimatrix
+[2x2_subspace2.bimatrix]
+payoffs_space = "sphere_preferences"
+game_class = "general_sum"
+normal_vectors = [[1,0,1,0], [1,-1,1,-1]]
+# network player 1
+[2x2_subspace2.model1]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 256
+# network player 2
+[2x2_subspace2.model2]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 256
+# loss function
+[2x2_subspace2.loss]
+ex_ante = true
+p = 2
+
+# -------------------------------------
+
+[2x2_subspace3]
+# games dimension
+n_actions = 2
+# bimatrix
+[2x2_subspace3.bimatrix]
+payoffs_space = "sphere_preferences"
+game_class = "general_sum"
+normal_vectors = [[1,-1,1,-1], [1,-1,1,-1]]
+# network player 1
+[2x2_subspace3.model1]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 256
+# network player 2
+[2x2_subspace3.model2]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 256
+# loss function
+[2x2_subspace3.loss]
+ex_ante = true
+p = 2
+
+# -------------------------------------
+
+[2x2_subspace4]
+# games dimension
+n_actions = 2
+# bimatrix
+[2x2_subspace4.bimatrix]
+payoffs_space = "sphere_preferences"
+game_class = "general_sum"
+normal_vectors = [[], [1,-1,1,-1]]
+# network player 1
+[2x2_subspace4.model1]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 256
+# network player 2
+[2x2_subspace4.model2]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 256
+# loss function
+[2x2_subspace4.loss]
+ex_ante = true
+p = 2
+
+# -------------------------------------
 
 [2x2_expost_loss]
-# bimatrix
-payoffs_space = "sphere_orthogonal"
-game_class = "general_sum"
-# neural network
-model_class = "mlp"
+# games dimension
 n_actions = 2
+# bimatrix
+[expost_loss.bimatrix]
+payoffs_space = "sphere_preferences"
+game_class = "general_sum"
+normal_vectors = [[], []]
+# network player 1
+[expost_loss.model1]
+model_class = "mlp"
 n_layers = 8
-hidden_dim = 512
-# loss
+hidden_dim = 256
+# network player 2
+[expost_loss.model2]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 256
+# loss function
+[2x2_expost_loss.loss]
 ex_ante = false
 p = 2
 
+# -------------------------------------
+
 [2x2_linear_loss]
-# bimatrix
-payoffs_space = "sphere_orthogonal"
-game_class = "general_sum"
-# neural network
-model_class = "mlp"
+# games dimension
 n_actions = 2
+# bimatrix
+[linear_loss.bimatrix]
+payoffs_space = "sphere_preferences"
+game_class = "general_sum"
+normal_vectors = [[], []]
+# network player 1
+[linear_loss.model1]
+model_class = "mlp"
 n_layers = 8
-hidden_dim = 512
-# loss
+hidden_dim = 256
+# network player 2
+[linear_loss.model2]
+model_class = "mlp"
+n_layers = 8
+hidden_dim = 256
+# loss function
+[2x2_linear_loss.loss]
 ex_ante = true
 p = 1
 
-
-[2x2_symmetric]
-# bimatrix
-payoffs_space = "sphere_orthogonal"
-game_class = "symmetric"
-# neural network
-model_class = "mlp"
-n_actions = 2
-n_layers = 8
-hidden_dim = 512
-# loss
-ex_ante = true
-p = 2
-
-[3x3_symmetric]
-# bimatrix
-payoffs_space = "sphere_orthogonal"
-game_class = "symmetric"
-# neural network
-model_class = "mlp"
-n_actions = 3
-n_layers = 8
-hidden_dim = 2048
-#loss
-ex_ante = true
-p = 2
-
-[2x2_zerosum]
-# bimatrix
-payoffs_space = "sphere_orthogonal"
-game_class = "zero_sum"
-# neural network
-model_class = "mlp"
-n_actions = 2
-n_layers = 8
-hidden_dim = 512
-# loss
-ex_ante = true
-p = 2
-
-[3x3_zerosum]
-# bimatrix
-payoffs_space = "sphere_orthogonal"
-game_class = "zero_sum"
-# neural network
-model_class = "mlp"
-n_actions = 3
-n_layers = 8
-hidden_dim = 2048
-#loss
-ex_ante = true
-p = 2
+# -------------------------------------

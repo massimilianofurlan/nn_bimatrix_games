@@ -73,11 +73,11 @@ def print_bimatrix_game(A, B, fmt=">+7.3f"):
         formatted_row = ''.join(f"({a:{fmt}}, {b:{fmt}}) " for a, b in zip(row1, row2))
         print(formatted_row)
 
-def display_model(model_metadata):
+def display_simulation(simulation_metadata):
     os.system('cls' if os.name == 'nt' else 'clear')
-    print(f"Model loaded")
-    print(f"\nModel: ")
-    print_metadata(model_metadata)
+    print(f"Models loaded")
+    print(f"\nSimulation: ")
+    print_metadata(simulation_metadata)
 
 def print_and_log(message, file):
     print(message)
@@ -90,3 +90,17 @@ def save_to_pickle(data, filename):
 def load_from_pickle(filename):
     with open(filename, 'rb') as f:
         return pickle.load(f)
+
+def process_config(args, config):
+    # add n_actions to subcategories
+    config["bimatrix"]["n_actions"] = config['n_actions']
+    config["model1"]["n_actions"] = config['n_actions']
+    config["model2"]["n_actions"] = config['n_actions']
+    # overwrite configs to training set configs
+    training_set = None
+    if args.training_set:
+        training_set =  torch.tensor(load_dataset(args.training_set), dtype=torch.float)
+        config['n_actions'] = training_set.size(2)
+        config['payoffs_space'] = 'set:' + args.training_set
+        config['game_class'] = 'set:' + args.training_set
+    return config, training_set
