@@ -1,7 +1,9 @@
 import torch
 
+# NOTE: this sampler generates bimatrix games of the form (A,B^T)
+
 class BimatrixSampler:
-    def __init__(self, n_actions: int, payoffs_space: str = "sphere", game_class: str = "general_sum", 
+    def __init__(self, n_actions: int, payoffs_space: str = "sphere_preferences", game_class: str = "general_sum", 
                        set_games = None, device: str = 'cpu', dtype=torch.float32):
         self.n_actions = n_actions  
         self.game_class = game_class
@@ -13,22 +15,16 @@ class BimatrixSampler:
         # number of payoffs for each agent
         self.n_payoffs = self.n_actions**2
         # householder rotation matrix
-        self.H = self.householder_matrix(self.n_payoffs)
-        # normal vector (for halfsphere)
-        self.v_norm, self.u_norm = self.normal_vectors(self.n_payoffs)
+        self.Hpr, self.Hbr = self.generate_rotations(self.n_payoffs)
         
         # define matrix sampling function based on payoffs_space
         if self.payoffs_space == 'sphere':
             self.sampler_matrix = self.rand_sphere
-        #elif self.payoffs_space == 'halfsphere':
-        #    self.sampler_matrix = self.rand_halfsphere
-        elif self.payoffs_space == 'sphere_orthogonal':
-            self.sampler_matrix = self.rand_sphere_orthogonal
-        elif self.payoffs_space == 'hemisphere_orthogonal':
-            self.sampler_matrix = self.rand_hemisphere_orthogonal
-        elif self.payoffs_space == 'halfsphere_orthogonal':
-            self.sampler_matrix = self.rand_halfsphere_orthogonal
-
+        elif self.payoffs_space == 'sphere_preferences':
+            self.sampler_matrix = self.rand_preferences_sphere
+        elif self.payoffs_space == 'sphere_strategic':
+            self.sampler_matrix = self.rand_strategic_sphere
+        
         # define bimatrix sampling function based on game class
         if self.game_class == "general_sum":
             self.sampler_bimatrix = self.rand_generalsum_bimatrix
@@ -44,27 +40,25 @@ class BimatrixSampler:
             self.set_games = self.set_games.to(self.device)
             self.sampler_bimatrix = self.rand_from_set_bimatrix
     
-    def householder_matrix(self, n):
-        # householder rotation matrix mapping (1,...,1) to (0,...,0,sqrt(n))
-        u = torch.ones(n, device=self.device, dtype=self.dtype, requires_grad=False)
-        u_target = torch.zeros(n, device=self.device, dtype=self.dtype)
+    def generate_rotations(self, n):
+        # generate householder rotation for space of preferences (1 rotation)
+        u = torch.ones(n, device=self.device, dtype=self.dtype)
+        u_target = torch.zeros(u.shape[0], device=self.device, dtype=self.dtype)
         u_target[-1] = torch.linalg.norm(u)
         v = u - u_target
-        H = torch.eye(n, device=self.device, dtype=self.dtype) - 2 * torch.outer(v, v) / torch.dot(v, v)
-        return H
-
-    def normal_vectors(self, n):
-        # normal vectors orthogonal to (1,1,...,1) and to each other
-        # v=(-1,-1,...,1,1)
-        v = torch.ones(n, device=self.device, dtype=self.dtype)
-        v[:n//2] = -1.0
-        v /= torch.linalg.vector_norm(v)
-        # u=(-1,+1,-1,+1,...)
-        u = torch.ones(n, device=self.device, dtype=self.dtype)
-        u[::2] = -1.0
-        u /= torch.linalg.vector_norm(u)
-        return v, u        
-
+        Hpr = torch.eye(u.shape[0], device=self.device, dtype=self.dtype) - 2 * torch.outer(v, v) / torch.dot(v, v)
+        # generate householder rotation for space of best-reply (n rotations)
+        Hbr = torch.eye(n, device=self.device, dtype=self.dtype)
+        for k in range(self.n_actions):
+            v = torch.zeros(n, device=self.device, dtype=self.dtype)
+            v[k * self.n_actions:(k + 1) * self.n_actions] = 1.0
+            v_target = torch.zeros_like(v)
+            v_target[self.n_actions*k] = torch.linalg.norm(v)  # Move to canonical basis
+            w = v - v_target
+            H = torch.eye(n, device=self.device, dtype=self.dtype) - 2 * torch.outer(w, w) / torch.dot(w, w)
+            Hbr = H @ Hbr  # Apply the reflection
+        return Hpr.requires_grad_(False), Hbr.requires_grad_(False)
+    
     def rand_sphere(self, k, n, r):
         # sample uniformly k points from r-radius sphere in R^{n}
         x = torch.randn((k, n), device=self.device, dtype=self.dtype, requires_grad=False)
@@ -72,90 +66,59 @@ class BimatrixSampler:
         x.div_(norm).mul_(r)
         return x
     
-    #def rand_halfsphere(self, k, n, r):
-    #    # sample uniformly k points from a slice of r-radius sphere in R^{n} with measure 1/2
-    #    x = self.rand_sphere(k, n, r)
-    #    # x=(x_i) with x_1 > 0; 1/2 of the sphere
-    #    # restrict to x=(x_i) with sign(x_{n-1}) = sign(x_n)
-    #    x[:,n-2:n] = x[:,n-2:n].abs_()
-    #    flip_sign = torch.where(torch.rand(k, device = self.device) > 1/2, -1.0, 1.0)
-    #    x[:,n-2:n] = x[:,n-2:n].mul_(flip_sign.unsqueeze(1))     
-    #    return x
-    
-    def rand_sphere_orthogonal(self, k, n, r):
+    def rand_preferences_sphere(self, k, n, r):
         # sample uniformly k points from r-radius sphere in the subspace orthogonal to (1,...,1) in R^{n_actions^2}
-        # note: (x)_i has variance r^2 / (n^2 - 1)
+        # note: (x)_i has variance 1
         # sample y uniformly from r-radius sphere in R^{n-1}
         y = self.rand_sphere(k, n - 1, r)
         # define z = (y.T,0)
         z = torch.zeros(k, n, device=self.device, dtype=self.dtype, requires_grad=False)
         z[:, :n - 1] = y
         # apply householder rotation mapping (1,...,1) to (0,...,sqrt(n))
-        x = torch.matmul(z, self.H.T)
+        x = torch.matmul(z, self.Hpr.T)
         # x is uniform in {x \in R^{n} | sum(x)=0, ||x||=r}
         return x
     
-    def rand_hemisphere_orthogonal(self, k, n, r):
-        # sample uniformly k points from r-radius hemisphere in the subspace orthogonal to (1,...,1) in R^{n_actions^2} 
-        # hemisphere on the positive halfspace x^Tv>0
-        # sample uniformly from r-radius sphere in subspace orthogonal to (1,...,1)
-        x = self.rand_sphere_orthogonal(k, n, r)
-        # positive halfspace x^Tv>0 with v = self.v_norm
-        inners = torch.matmul(x, self.v_norm)
-        pos_half_mask = inners > 0
-        # reflect points on negative halfsphere across x^Tv=0 plane x <- x - 2 (x^Tv)v 
-        x[~pos_half_mask] = x[~pos_half_mask] - 2 * torch.outer(inners[~pos_half_mask], self.v_norm)
-        # x is uniform in {x \in R^{n} | sum(x)=0, ||x||=r, x^Tv>0}
+    def rand_strategic_sphere(self, k, n, r):
+        # sample uniformly k points from r-radius sphere in the subspace 
+        # orthogonal to {(1,0,..),(0,1,0,...),...} (where 1 and 0 are 1xn)
+        # note: (x)_i has variance 1
+        # sample y uniformly from r-radius sphere in R^{n-n_actions}
+        y = self.rand_sphere(k, n - self.n_actions, r)
+        # define z.view(n,n)[n-1,n] = y.view(n,n)
+        z = torch.zeros(k, n, device=self.device, dtype=self.dtype, requires_grad=False)
+        z[:, torch.arange(n) % self.n_actions != 0] = y
+        # apply householder rotation
+        x = torch.matmul(z, self.Hbr.T)
+        # x is uniform in {x \in R^{n} | 1^T x.view(n,n)=0, ||x||=r}
         return x
-
-    def rand_halfsphere_orthogonal(self, k, n, r):
-        # sample uniformly k points from r-radius halfsphere in the subspace orthogonal to (1,...,1) in R^{n_actions^2} 
-        # halfsphere on the positive and negative orthant sign(x^Tv) = sign(x^Tu)
-        # sample uniformly from r-radius sphere in subspace orthogonal to (1,...,1)
-        x = self.rand_sphere_orthogonal(k, n, r)
-        # positive halfspace x^Tv>0 with v = self.v_norm
-        inners_v = torch.matmul(x, self.v_norm)
-        pos_half_v_mask = inners_v > 0
-        # positive halfspace x^Tu>0 with u = self.u_norm
-        inners_u = torch.matmul(x, self.u_norm)
-        pos_half_u_mask = inners_u > 0
-        # +- orthant x^Tv>0 and x^Tu<0
-        posneg_orth_mask = pos_half_v_mask & ~pos_half_u_mask
-        # -+ orthant x^Tv<0 and x^Tu>0
-        negpos_orth_mask = ~pos_half_v_mask & pos_half_u_mask
-        # reflect points on +- orthant across x^Tu=0 plane into the ++ orthant x <- x - 2 (x^Tu)u
-        x[posneg_orth_mask] = x[posneg_orth_mask] - 2 * torch.outer(inners_u[posneg_orth_mask], self.u_norm)
-        # reflect points on -+ orthant across x^Tu=0 plane into the -- orthant x <- x - 2 (x^Tu)u
-        x[negpos_orth_mask] = x[negpos_orth_mask] - 2 * torch.outer(inners_u[negpos_orth_mask], self.u_norm)
-        # x is uniform in {x \in R^{n} | sum(x)=0, ||x||=r, sgn(x^Tv)=sgn(x^Tu)}
-        return x
-
+    
     def rand_generalsum_bimatrix(self, batch_size):
         # sample general-sum bimatrix game
         A_vec = self.sampler_matrix(batch_size, self.n_payoffs, self.n_actions)
         B_vec = self.sampler_matrix(batch_size, self.n_payoffs, self.n_actions)
-        A = A_vec.view(batch_size, self.n_actions, self.n_actions)
-        B = B_vec.view(batch_size, self.n_actions, self.n_actions)
+        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # transpose because torch is col-major
+        B = B_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # transpose because torch is col-major
         return A, B
-
+    
     def rand_zerosum_bimatrix(self, batch_size):
         # sample zero-sum bimatrix game
         A_vec = self.sampler_matrix(batch_size, self.n_payoffs, self.n_actions)
-        A = A_vec.view(batch_size, self.n_actions, self.n_actions)
+        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # transpose because torch is col-major
         return A, -A
-
+    
     def rand_symmetric_bimatrix(self, batch_size):
         # sample symmetric bimatrix game
         A_vec = self.sampler_matrix(batch_size, self.n_payoffs, self.n_actions)
-        A = A_vec.view(batch_size, self.n_actions, self.n_actions)
+        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # transpose because torch is col-major
         return A, A.transpose(1,2)
-
+    
     def rand_from_set_bimatrix(self, batch_size):
-        # sample bimatrix game from set_games
+        # sample bimatrix game from set_games with convention (A,B^T)
         idx = torch.randint(self.set_games.size(0), (batch_size,))
         A, B = self.set_games[idx][:,0,:,:], self.set_games[idx][:,1,:,:]
         return A, B
-
+    
     def __call__(self, batch_size: int) -> torch.Tensor:
         A, B = self.sampler_bimatrix(batch_size)
         G = torch.stack((A, B), dim=1)
