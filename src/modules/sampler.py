@@ -68,7 +68,8 @@ class BimatrixSampler:
             v = torch.zeros(n, device=self.device, dtype=self.dtype)
             v[k * self.n_actions:(k + 1) * self.n_actions] = 1.0
             v_target = torch.zeros_like(v)
-            v_target[self.n_actions*k] = torch.linalg.norm(v)
+            #v_target[self.n_actions*k] = torch.linalg.norm(v)
+            v_target[n - self.n_actions + k] = torch.linalg.norm(v)
             w = v - v_target
             H = torch.eye(n, device=self.device, dtype=self.dtype) - 2 * torch.outer(w, w) / torch.dot(w, w)
             Hbr = H @ Hbr
@@ -83,7 +84,8 @@ class BimatrixSampler:
         return v_norm_A.requires_grad_(False), v_norm_B.requires_grad_(False)
     
     def reflect(self, x, v_norm):
-        # reflect points in x^T v < 0 across the hyperplane orthogonal to v.
+        # reflect points in x^T v < 0 across the hyperplane orthogonal to v
+        # v must have norm 1 (x <- x - 2 (x^Tv)v/(v'v) = x - 2 (x^Tv)v
         if v_norm.numel() == 0:
             return x
         # compute inners x^Tv
@@ -121,11 +123,12 @@ class BimatrixSampler:
         y = self.rand_sphere(k, n - self.n_actions, r)
         # define z.view(n,n)[n-1,n] = y.view(n,n)
         z = torch.zeros(k, n, device=self.device, dtype=self.dtype, requires_grad=False)
-        z[:, torch.arange(n) % self.n_actions != 0] = y
+        #z[:, torch.arange(n) % self.n_actions != 0] = y
+        z[:,:n - self.n_actions] = y
         # apply householder rotation
         x = torch.matmul(z, self.Hbr.T)
         # x is uniform in {x \in R^{n} | 1^T x.view(n,n)=0, ||x||=r}
-        return x
+        return x        
     
     def rand_generalsum_bimatrix(self, batch_size):
         # sample general-sum bimatrix game
@@ -133,7 +136,7 @@ class BimatrixSampler:
         B_vec = self.sampler_matrix(batch_size, self.n_payoffs, self.n_actions)
         A_vec = self.reflect(A_vec, self.v_norm_A)
         B_vec = self.reflect(B_vec, self.v_norm_B)
-        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # torch is row-major
+        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # torch vec() is row-major
         B = B_vec.view(batch_size, self.n_actions, self.n_actions)
         return A, B
     
@@ -141,14 +144,14 @@ class BimatrixSampler:
         # sample zero-sum bimatrix game
         A_vec = self.sampler_matrix(batch_size, self.n_payoffs, self.n_actions)
         A_vec = self.reflect(A_vec, self.v_norm_A)
-        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # torch is row-major
+        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # torch vec() is row-major
         return A, -A
     
     def rand_symmetric_bimatrix(self, batch_size):
         # sample symmetric bimatrix game
         A_vec = self.sampler_matrix(batch_size, self.n_payoffs, self.n_actions)
         A_vec = self.reflect(A_vec, self.v_norm_A)
-        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # torch is row-major
+        A = A_vec.view(batch_size, self.n_actions, self.n_actions).transpose(1,2)    # torch vec() is row-major
         return A, A.transpose(1,2)
     
     def rand_from_set_bimatrix(self, batch_size):
