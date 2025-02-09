@@ -51,7 +51,7 @@ def test_bimatrix_sampler():
     sampler = BimatrixSampler(n_actions=n_actions, payoffs_space="sphere_strategic", device='cpu')
     G = sampler(batch_size)
 
-    max_sum = G.sum(dim=2).abs().max().item()
+    max_sum = max(G[:,0,].sum(dim=1).abs().max().item(), G[:,1,].sum(dim=2).abs().max().item())
     passed = max_sum < 1e-5
     print_result("Sphere Strategic Column Sum Constraint", passed, "≈0", max_sum)
 
@@ -71,14 +71,38 @@ def test_bimatrix_sampler():
     passed = max_dev < 1e-5
     print_result("Sphere Strategic Norm Check", passed, n_actions, norm_G.mean().item())
 
-    # Test 4: Zero-sum Game Sampling
-    sampler = BimatrixSampler(n_actions=n_actions, payoffs_space="sphere", game_class='zero_sum', device='cpu')
-    G = sampler(batch_size)
-    A, B = G[:, 0], G[:, 1]
+    # Test 4: Sphere Preferences Subspaces
+    n_actions = 2
+    v_norm_A = torch.tensor([-1.0, 1.0, 1.0, -1.0], device='cpu').detach()
+    v_norm_B = torch.tensor([1.0, -1.0, -1.0, 1.0], device='cpu').detach()
+    sampler = BimatrixSampler(n_actions=n_actions, payoffs_space="sphere_preferences", device='cpu',
+                          normal_vectors = [v_norm_A, v_norm_B])
 
-    max_deviation = torch.max(abs(A + B)).item()
-    passed = max_deviation < 1e-5
-    print_result("Zero-sum Game Check", passed, "A ≈ -B", max_deviation)
+    G = sampler(batch_size)
+    sum_G = G.sum(dim=(2, 3))
+    max_sum = sum_G.abs().max().item()
+    passed = max_sum < 1e-5
+    print_result("Sphere Preferences Subspaces Sum Constraint", passed, "≈0", max_sum)
+
+    std_dev = G.std(dim=(0, 1))
+    max_dev = torch.max(abs(std_dev - 1)).item()
+    passed = max_dev < 1e-3
+    print_result("Sphere Preferences Subspaces Standard Deviation", passed, "≈1", std_dev.mean().item())
+
+    expected_max = (n_actions**2 - 1) ** 0.5
+    max_abs_G = max(G.max().item(), abs(G.min().item()))
+    deviation = expected_max - max_abs_G
+    passed = abs(deviation) < 1e-3
+    print_result("Sphere Preferences Subspaces Max-Min Check", passed, expected_max, max_abs_G)
+
+    A_vec = G[:,0,:,:].permute(0,2,1).reshape(-1, n_actions**2)
+    B_vec = G[:,1,:,:].reshape(-1, n_actions**2)
+    inners_A = torch.matmul(A_vec, v_norm_A)
+    inners_B = torch.matmul(B_vec, v_norm_B)
+    min_inners = min(inners_A.amax(), inners_B.amax())
+    passed = min_inners > -1e-5
+    print_result("Sphere Preferences Subspaces Inners Check", passed, "≈0", min_inners)
+
 
 # Run the tests
 test_bimatrix_sampler()

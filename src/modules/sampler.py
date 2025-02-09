@@ -76,8 +76,8 @@ class BimatrixSampler:
     
     def generate_normal_vectors(self, normal_vectors):
         v_norm_A, v_norm_B = normal_vectors
-        v_norm_A = torch.tensor(v_norm_A, device=self.device, dtype=self.dtype)
-        v_norm_B = torch.tensor(v_norm_B, device=self.device, dtype=self.dtype)
+        v_norm_A = torch.as_tensor(v_norm_A, device=self.device, dtype=self.dtype)
+        v_norm_B = torch.as_tensor(v_norm_B, device=self.device, dtype=self.dtype)
         v_norm_A /= 1 if v_norm_A.numel() == 0 else torch.linalg.norm(v_norm_A)
         v_norm_B /= 1 if v_norm_B.numel() == 0 else torch.linalg.norm(v_norm_B)
         return v_norm_A.requires_grad_(False), v_norm_B.requires_grad_(False)
