@@ -73,7 +73,7 @@ def test_bimatrix_sampler():
 
     # Test 4: Sphere Preferences Subspaces
     n_actions = 2
-    v_norm_A = torch.tensor([-1.0, 1.0, 1.0, -1.0], device='cpu').detach()
+    v_norm_A = torch.tensor([1.0, -1.0, 1.0, -1.0], device='cpu').detach()
     v_norm_B = torch.tensor([1.0, -1.0, -1.0, 1.0], device='cpu').detach()
     sampler = BimatrixSampler(n_actions=n_actions, payoffs_space="sphere_preferences", device='cpu',
                           normal_vectors = [v_norm_A, v_norm_B])
