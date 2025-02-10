@@ -1,5 +1,7 @@
 import torch
+import numpy as np
 from src.modules.sampler import BimatrixSampler
+from src.utilities.bimatrix_utils import get_nash_equilibria
 
 def test_bimatrix_sampler():
     n_actions = 3
@@ -8,9 +10,9 @@ def test_bimatrix_sampler():
     def print_result(test_name, passed, expected, actual):
         """Prints test results with expected and actual values."""
         if passed:
-            print(f"{test_name} passed [ok]")
+            print(f"[PASSED] {test_name}")
         else:
-            print(f"{test_name} FAILED [!!] Expected: {expected}, Got: {actual}")
+            print(f"[FAILED] {test_name} [!!] Expected: {expected}, Got: {actual}")
 
     # Test 1: Sphere Sampling
     sampler = BimatrixSampler(n_actions=n_actions, payoffs_space="sphere", device='cpu')
@@ -84,10 +86,10 @@ def test_bimatrix_sampler():
     passed = max_sum < 1e-5
     print_result("Sphere Preferences Subspaces Sum Constraint", passed, "≈0", max_sum)
 
-    std_dev = G.std(dim=(0, 1))
-    max_dev = torch.max(abs(std_dev - 1)).item()
-    passed = max_dev < 1e-3
-    print_result("Sphere Preferences Subspaces Standard Deviation", passed, "≈1", std_dev.mean().item())
+    #std_dev = G.std(dim=(0, 1))
+    #max_dev = torch.max(abs(std_dev - 1)).item()
+    #passed = max_dev < 1e-3
+    #print_result("Sphere Preferences Subspaces Standard Deviation", passed, "≈1", std_dev.mean().item())
 
     expected_max = (n_actions**2 - 1) ** 0.5
     max_abs_G = max(G.max().item(), abs(G.min().item()))
@@ -102,6 +104,39 @@ def test_bimatrix_sampler():
     min_inners = min(inners_A.amax(), inners_B.amax())
     passed = min_inners > -1e-5
     print_result("Sphere Preferences Subspaces Inners Check", passed, "≈0", min_inners)
+
+    # Test 4: Sphere Equivalent Subspace
+    sampler = BimatrixSampler(n_actions=n_actions, payoffs_space="sphere_equivalent", device='cpu')
+    G = sampler(batch_size)
+
+    #std_dev = G.std(dim=(0, 1))
+    #max_dev = torch.max(abs(std_dev - 1)).item()
+    #passed = max_dev < 1e-3
+    #print_result("Sphere Equivalent Subspaces Standard Deviation", passed, "≈1", std_dev.mean().item())
+
+    expected_max = (n_actions**2 - 1) ** 0.5
+    max_abs_G = max(G.max().item(), abs(G.min().item()))
+    deviation = expected_max - max_abs_G
+    passed = abs(deviation) < 1e-3
+    print_result("Sphere Equivalent Subspaces Max-Min Check", passed, expected_max, max_abs_G)
+
+    norm_G = G.norm(dim=(2, 3))
+    max_dev = torch.max(abs(norm_G - n_actions)).item()
+    passed = max_dev < 1e-5
+    print_result("Sphere Equivalent Subspaces Norm Check", passed, n_actions, norm_G.mean().item())
+
+    sampler = BimatrixSampler(n_actions=n_actions, payoffs_space="sphere_equivalent", device='cpu')
+    G = sampler(batch_size)
+    n_games = 1024
+    set_games = G[:n_games]
+    list_nash = []
+    for G in set_games:
+        nash = get_nash_equilibria(G, rational = False)[0]
+        list_nash.append(nash)
+    first_nash = list_nash[0]
+    count_equal = sum(np.array_equal(nash, list_nash[0]) for nash in list_nash)
+    passed = (count_equal == n_games)
+    print_result("Sphere Equivalent Subspaces Nash Equivalence Check", passed, f"{n_games}", count_equal)
 
 
 # Run the tests

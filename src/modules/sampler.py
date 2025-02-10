@@ -31,6 +31,8 @@ class BimatrixSampler:
         self.Hpr, self.Hbr = self.generate_rotations(self.n_payoffs)
         # normal vectors
         self.v_norm_A, self.v_norm_B = self.generate_normal_vectors(self.normal_vectors)
+        # generate basis for mean-0, norm-n space orthogonal to column-0, norm-n space
+        self.c_orth = self.generate_basis()
         
         # define matrix sampling function based on payoffs_space (samples A)
         if self.payoffs_space == 'sphere':
@@ -39,6 +41,8 @@ class BimatrixSampler:
             self.sampler_matrix = self.rand_preferences_sphere
         elif self.payoffs_space == 'sphere_strategic':
             self.sampler_matrix = self.rand_strategic_sphere
+        elif self.payoffs_space == 'sphere_equivalent':
+            self.sampler_matrix = self.rand_equivalent_sphere
         
         # define bimatrix sampling function based on game class (samples A,B)
         if self.game_class == "general_sum":
@@ -83,6 +87,12 @@ class BimatrixSampler:
         v_norm_B /= 1 if v_norm_B.numel() == 0 else torch.linalg.norm(v_norm_B)
         return v_norm_A.requires_grad_(False), v_norm_B.requires_grad_(False)
     
+    def generate_basis(self):
+        c_orth = torch.zeros(self.n_actions**2, device=self.device, dtype=self.dtype)
+        c_orth[-self.n_actions:-1] = 1
+        c_orth *= self.n_actions / c_orth.norm() # norm n_actions
+        return c_orth
+    
     def reflect(self, x, v_norm):
         # reflect points in x^T v < 0 across the hyperplane orthogonal to v
         # v must have norm 1 (x <- x - 2 (x^Tv)v/(v'v) = x - 2 (x^Tv)v
@@ -108,11 +118,11 @@ class BimatrixSampler:
         # sample uniformly k points from r-radius sphere in the subspace orthogonal to (1,...,1) in R^{n_actions^2}
         # sample y uniformly from r-radius sphere in R^{n-1}
         y = self.rand_sphere(k, n - 1, r)
-        # define z = (y.T,0)
-        z = torch.zeros(k, n, device=self.device, dtype=self.dtype, requires_grad=False)
-        z[:, :n - 1] = y
+        # define y_ext = (y',0)
+        y_ext = torch.zeros(k, n, device=self.device, dtype=self.dtype, requires_grad=False)
+        y_ext[:, :n - 1] = y
         # apply householder rotation mapping (1,...,1) to (0,...,sqrt(n))
-        x = torch.matmul(z, self.Hpr.T)
+        x = torch.matmul(y_ext, self.Hpr.T)
         # x is uniform in {x \in R^{n} | sum(x)=0, ||x||=r}
         return x
     
@@ -120,15 +130,30 @@ class BimatrixSampler:
         # sample uniformly k points from r-radius sphere in the subspace 
         # orthogonal to {(1,0,..),(0,1,0,...),...} (where 1 and 0 are 1xn)
         # sample y uniformly from r-radius sphere in R^{n-n_actions}
-        y = self.rand_sphere(k, n - self.n_actions, r)
-        # define z.view(n,n)[n-1,n] = y.view(n,n)
-        z = torch.zeros(k, n, device=self.device, dtype=self.dtype, requires_grad=False)
-        #z[:, torch.arange(n) % self.n_actions != 0] = y
-        z[:,:n - self.n_actions] = y
+        z = self.rand_sphere(k, n - self.n_actions, r)
+        # define z_ext = (z',0,..,0), with n trailing zeros
+        z_ext = torch.zeros(k, n, device=self.device, dtype=self.dtype, requires_grad=False)
+        z_ext[:,:n - self.n_actions] = z
         # apply householder rotation
-        x = torch.matmul(z, self.Hbr.T)
+        x = torch.matmul(z_ext, self.Hbr.T)
         # x is uniform in {x \in R^{n} | 1^T x.view(n,n)=0, ||x||=r}
         return x        
+    
+    def rand_equivalent_sphere(self, k, n, r):
+        # sample uniformly k best-reply equivalent payoff vectors from {x \in R^{n} | 1^T x.view(n,n)=0, ||x||=r}
+        # sample a vector from strategic sphere: the k points will be best-reply equivalent to Hbr^{-1}z_ext 
+        z = self.rand_sphere(1, n - self.n_actions, r)
+        # define z_ext = (z',0,..,0), with n trailing zeros
+        z_ext = torch.zeros(n, device=self.device, dtype=self.dtype, requires_grad=False)
+        z_ext[:n - self.n_actions] = z
+        # sample t from uniform in [-π/2, π/2]
+        t = (torch.rand(k, device=self.device, dtype=self.dtype) * torch.pi - torch.pi / 2).view(k,1)
+        # rotate z_ext into {x \in R^{n} | sum(x)=0, ||x||=r} along orthogonal direction c_orth
+        # (y', 0)' <- cos(x) * (z', 0, ..., 0)' + sin(x) * c_orth
+        y_ext = torch.cos(t) * z_ext + torch.sin(t) * self.c_orth
+        # apply householder rotation
+        x = torch.matmul(y_ext, self.Hpr.T)
+        return x
     
     def rand_generalsum_bimatrix(self, batch_size):
         # sample general-sum bimatrix game
