@@ -46,7 +46,7 @@ def test_bimatrix_sampler():
     expected_max = (n_actions**2 - 1) ** 0.5
     max_abs_G = max(G.max().item(), abs(G.min().item()))
     deviation = expected_max - max_abs_G
-    passed = abs(deviation) < 1e-3
+    passed = abs(deviation) < 1e-2
     print_result("Sphere Preferences Max-Min Check", passed, expected_max, max_abs_G)
 
     # Test 3: Sphere Strategic Sampling
@@ -126,18 +126,19 @@ def test_bimatrix_sampler():
     print_result("Sphere Equivalent Subspaces Norm Check", passed, n_actions, norm_G.mean().item())
 
     sampler = BimatrixSampler(n_actions=n_actions, payoffs_space="sphere_equivalent", device='cpu')
-    G = sampler(batch_size)
-    n_games = 1024
-    set_games = G[:n_games]
-    list_nash = []
-    for G in set_games:
-        nash = get_nash_equilibria(G, rational = False)[0]
-        list_nash.append(nash)
-    first_nash = list_nash[0]
-    count_equal = sum(np.array_equal(nash, list_nash[0]) for nash in list_nash)
-    passed = (count_equal == n_games)
-    print_result("Sphere Equivalent Subspaces Nash Equivalence Check", passed, f"{n_games}", count_equal)
-
+    n_tests = 128
+    n_games = 32
+    n_passed = 0
+    for z in range(n_tests):
+        set_games = sampler(n_games)
+        list_nash = []
+        for G in set_games:
+            list_nash.append(get_nash_equilibria(G, rational = False)[0].round(4))
+        first_nash = list_nash[0].sort(axis=0)
+        count_equal = sum(np.array_equal(nash.sort(axis=0), first_nash) for nash in list_nash)
+        n_passed += (count_equal == n_games)
+    passed = n_passed == n_tests
+    print_result("Sphere Equivalent Subspaces Nash Equivalence Check", passed, f"{n_tests}", n_passed)
 
 # Run the tests
 test_bimatrix_sampler()

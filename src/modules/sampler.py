@@ -28,7 +28,7 @@ class BimatrixSampler:
         # number of payoffs for each agent
         self.n_payoffs = self.n_actions**2
         # householder rotation matrices
-        self.Hpr, self.Hbr = self.generate_rotations(self.n_payoffs)
+        self.Hpr, self.Hbr = self.generate_rotations()
         # normal vectors
         self.v_norm_A, self.v_norm_B = self.generate_normal_vectors(self.normal_vectors)
         # generate basis for mean-0, norm-n space orthogonal to column-0, norm-n space
@@ -59,23 +59,23 @@ class BimatrixSampler:
             self.set_games = self.set_games.to(self.device)
             self.sampler_bimatrix = self.rand_from_set_bimatrix
     
-    def generate_rotations(self, n):
+    def generate_rotations(self):
         # generate householder rotation for space of preferences (1 rotation)
-        u = torch.ones(n, device=self.device, dtype=self.dtype)
+        u = torch.ones(self.n_payoffs, device=self.device, dtype=self.dtype)
         u_target = torch.zeros(u.shape[0], device=self.device, dtype=self.dtype)
         u_target[-1] = torch.linalg.norm(u)
         v = u - u_target
         Hpr = torch.eye(u.shape[0], device=self.device, dtype=self.dtype) - 2 * torch.outer(v, v) / torch.dot(v, v)
-        # generate householder rotation for space of best-reply (n rotations)
-        Hbr = torch.eye(n, device=self.device, dtype=self.dtype)
+        # generate householder rotation for space of best-reply (n_payoffs rotations)
+        Hbr = torch.eye(self.n_payoffs, device=self.device, dtype=self.dtype)
         for k in range(self.n_actions):
-            v = torch.zeros(n, device=self.device, dtype=self.dtype)
+            v = torch.zeros(self.n_payoffs, device=self.device, dtype=self.dtype)
             v[k * self.n_actions:(k + 1) * self.n_actions] = 1.0
             v_target = torch.zeros_like(v)
             #v_target[self.n_actions*k] = torch.linalg.norm(v)
-            v_target[n - self.n_actions + k] = torch.linalg.norm(v)
+            v_target[self.n_payoffs - self.n_actions + k] = torch.linalg.norm(v)
             w = v - v_target
-            H = torch.eye(n, device=self.device, dtype=self.dtype) - 2 * torch.outer(w, w) / torch.dot(w, w)
+            H = torch.eye(self.n_payoffs, device=self.device, dtype=self.dtype) - 2 * torch.outer(w, w) / torch.dot(w, w)
             Hbr = H @ Hbr
         return Hpr.requires_grad_(False), Hbr.requires_grad_(False)
     
@@ -88,10 +88,14 @@ class BimatrixSampler:
         return v_norm_A.requires_grad_(False), v_norm_B.requires_grad_(False)
     
     def generate_basis(self):
+        # basis for mean-0,norm-n space (where y lives) orthogonal to column-0,norm-n space (where z lives)
+        # c_orth is proportional to vector (0, .. , 1, .., 1, 0)' 
+        # which has n_actions^2 - n_actions zeros, followed by n_actions - 1 ones and a final zero entry
+        # eg, for 3x3 games c_orth is proportional to (0, 0, 0, 0, 0, 0, 1, 1, 0)'
         c_orth = torch.zeros(self.n_actions**2, device=self.device, dtype=self.dtype)
         c_orth[-self.n_actions:-1] = 1
-        c_orth *= self.n_actions / c_orth.norm() # norm n_actions
-        return c_orth
+        c_orth *= self.n_actions / c_orth.norm()
+        return c_orth.requires_grad_(False)
     
     def reflect(self, x, v_norm):
         # reflect points in x^T v < 0 across the hyperplane orthogonal to v
@@ -141,11 +145,9 @@ class BimatrixSampler:
     
     def rand_equivalent_sphere(self, k, n, r):
         # sample uniformly k best-reply equivalent payoff vectors from {x \in R^{n} | 1^T x.view(n,n)=0, ||x||=r}
-        # sample a vector from strategic sphere: the k points will be best-reply equivalent to Hbr^{-1}z_ext 
-        z = self.rand_sphere(1, n - self.n_actions, r)
-        # define z_ext = (z',0,..,0), with n trailing zeros
-        z_ext = torch.zeros(n, device=self.device, dtype=self.dtype, requires_grad=False)
-        z_ext[:n - self.n_actions] = z
+        # sample a vector from strategic sphere: the k points will be best-reply equivalent to x_ref
+        x_ref = self.rand_strategic_sphere(1, n, r)
+        z_ext = torch.matmul(x_ref, self.Hpr)
         # sample t from uniform in [-π/2, π/2]
         t = (torch.rand(k, device=self.device, dtype=self.dtype) * torch.pi - torch.pi / 2).view(k,1)
         # rotate z_ext into {x \in R^{n} | sum(x)=0, ||x||=r} along orthogonal direction c_orth
