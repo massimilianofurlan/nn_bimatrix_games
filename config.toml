@@ -276,6 +276,31 @@ p = 2
 
 # -------------------------------------
 
+[2x2_strategic]
+# games dimension
+n_actions = 2
+# bimatrix
+[2x2_strategic.bimatrix]
+payoffs_space = "sphere_strategic"
+game_class = "general_sum"
+normal_vectors = [[], []]
+# network player 1
+[2x2_strategic.model1]
+model_class = "mlp"
+n_layers = 4
+hidden_dim = 256
+# network player 2
+[2x2_strategic.model2]
+model_class = "mlp"
+n_layers = 4
+hidden_dim = 256
+# loss function
+[2x2_strategic.loss]
+ex_ante = true
+p = 2
+
+# -------------------------------------
+
 [2x2_expost_loss]
 # games dimension
 n_actions = 2
@@ -347,6 +372,6 @@ hidden_dim = 256
 # loss function
 [2x2_asymmetric.loss]
 ex_ante = true
-p = 1
+p = 2
 
 # -------------------------------------

@@ -12,7 +12,7 @@ from src.utilities.io_utils import print_metadata, preview_dataset, log_metadata
 gamma = 0.05
 
 def broadcast(list_arr, func, **kwargs):
-        return np.array([func(arr, **kwargs) for arr in list_arr])
+    return np.array([func(arr, **kwargs) for arr in list_arr])
 
 def get_mask(n_arr):
     n_arr_mask = [n_arr == k for k in range(0,np.max(n_arr)+1)]

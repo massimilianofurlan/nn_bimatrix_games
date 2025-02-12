@@ -94,13 +94,13 @@ def save_dataset(dataset, labels, statistics, summary_statistics, timestamp, arg
         print_and_log(f'\n------ Metadata ------', f)
         print_and_log(f'{metadata}', f)
         print_and_log(f'\n------ Statistics ------', f)
-        print_and_log(f'Number of games: {summary_statistics['n_games']}', f)
-        print_and_log(f'Freq. Number of Nash: {(summary_statistics['n_nash_count']).round(3)}', f)
-        print_and_log(f'Freq. Number of Pure Nash: {(summary_statistics['n_pure_nash_count']).round(3)}', f)
-        print_and_log(f'Freq. Number Dominated Actions: {(summary_statistics['n_dominated_count']).round(3)}', f)
-        print_and_log(f'Freq. Number Rationalizable Profiles: {(summary_statistics['n_rationalizable_profiles_count']).round(3)}', f)
-        print_and_log(f'Freq. Number of Pareto Superior Nash: {(summary_statistics['n_pareto_optimal_count']).round(3)}', f)
-        print_and_log(f'Freq. Number of Payoff Dominant Nash: {(summary_statistics['n_payoff_dominant_count']).round(3)}', f)
+        print_and_log(f'Number of games: {summary_statistics["n_games"]}', f)
+        print_and_log(f'Freq. Number of Nash: {(summary_statistics["n_nash_count"]).round(3)}', f)
+        print_and_log(f'Freq. Number of Pure Nash: {(summary_statistics["n_pure_nash_count"]).round(3)}', f)
+        print_and_log(f'Freq. Number Dominated Actions: {(summary_statistics["n_dominated_count"]).round(3)}', f)
+        print_and_log(f'Freq. Number Rationalizable Profiles: {(summary_statistics["n_rationalizable_profiles_count"]).round(3)}', f)
+        print_and_log(f'Freq. Number of Pareto Superior Nash: {(summary_statistics["n_pareto_optimal_count"]).round(3)}', f)
+        print_and_log(f'Freq. Number of Payoff Dominant Nash: {(summary_statistics["n_payoff_dominant_count"]).round(3)}', f)
 
 
 def read_games_from_file(file_path):
