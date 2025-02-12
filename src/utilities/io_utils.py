@@ -19,7 +19,7 @@ def list_dirs(base_dir):
 
 def print_metadata(**metadata):
     for param, value in metadata.items():
-        if isinstance(value, dict):  # If the value is a nested dictionary, print its contents
+        if isinstance(value, dict):
             print(f"{param}:")
             for sub_param, sub_value in value.items():
                 print(f"  {sub_param}: {sub_value}")
@@ -27,11 +27,16 @@ def print_metadata(**metadata):
             print(f"{param}: {value}")
 
 def log_metadata(file_path, metadata, intro, w='w'):
-    with open(f'{file_path}', w) as f:
+    with open(file_path, w) as f:
         f.write(f"{intro}\n")
         for param, value in metadata.items():
-            f.write(f"  {param}: {value}\n")
-        f.write(f"\n")
+            if isinstance(value, dict):
+                f.write(f"{param}:\n")
+                for sub_param, sub_value in value.items():
+                    f.write(f"  {sub_param}: {sub_value}\n")
+            else:
+                f.write(f"{param}: {value}\n")
+        f.write("\n")
 
 def save_metadata(file_path, metadata, w='w'):
     with open(file_path, 'w') as f:

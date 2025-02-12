@@ -44,7 +44,7 @@ def load_evaluation(model_dir, dataset_dir, base_dir="models"):
     evaluation = load_from_pickle(evaluation_path)
     return evaluation
 
-def save_dataset(dataset, labels, statistics, timestamp, args, save_path = None):
+def save_dataset(dataset, labels, statistics, summary_statistics, timestamp, args, save_path = None):
     """
     Save the generated dataset and labels using pickle.
 
@@ -81,12 +81,27 @@ def save_dataset(dataset, labels, statistics, timestamp, args, save_path = None)
         'n_actions': args.n_actions,
         'payoffs_space': args.payoffs_space,
         'game_class': args.game_class,
+        'normal_vectors': args.normal_vectors,
         'n_traces': args.n_traces
     }
     metadata_filename = os.path.join(dataset_folder, "metadata.json")
     with open(metadata_filename, 'w') as f:
         json.dump(metadata, f, indent=4)
     print(f"Metadata saved to '{metadata_filename}'")
+
+    # Save summary to file
+    with open(f"{dataset_folder}/statistics.txt", 'w') as f:
+        print_and_log(f'\n------ Metadata ------', f)
+        print_and_log(f'{metadata}', f)
+        print_and_log(f'\n------ Statistics ------', f)
+        print_and_log(f'Number of games: {summary_statistics['n_games']}', f)
+        print_and_log(f'Freq. Number of Nash: {(summary_statistics['n_nash_count']).round(3)}', f)
+        print_and_log(f'Freq. Number of Pure Nash: {(summary_statistics['n_pure_nash_count']).round(3)}', f)
+        print_and_log(f'Freq. Number Dominated Actions: {(summary_statistics['n_dominated_count']).round(3)}', f)
+        print_and_log(f'Freq. Number Rationalizable Profiles: {(summary_statistics['n_rationalizable_profiles_count']).round(3)}', f)
+        print_and_log(f'Freq. Number of Pareto Superior Nash: {(summary_statistics['n_pareto_optimal_count']).round(3)}', f)
+        print_and_log(f'Freq. Number of Payoff Dominant Nash: {(summary_statistics['n_payoff_dominant_count']).round(3)}', f)
+
 
 def read_games_from_file(file_path):
     """

@@ -8,26 +8,20 @@ import torch
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor
 from src.utilities.bimatrix_utils import *
-from src.utilities.io_utils import save_to_pickle
+from src.utilities.io_utils import save_to_pickle, print_and_log
 from src.utilities.data_utils import save_dataset
 from src.modules.sampler import BimatrixSampler
 
 def process_batch(batch, n_traces): return [process_game(game, n_traces) for game in batch]
 
 def broadcast(list_arr, func, **kwargs):
-        return np.array([func(arr, **kwargs) for arr in list_arr])
+    return np.array([func(arr, **kwargs) for arr in list_arr])
 
- 
+def get_count(n_arr, axis=None):
+    n_arr_mask = [n_arr == k for k in range(0,np.max(n_arr)+1)]
+    return broadcast(n_arr_mask,np.sum,axis=axis)
+
 def process_game(G, n_traces):
-    """
-    Process a single game to compute various evaluation metrics.
-    
-    Args:
-    - G: tuple of np.ndarray, payoff matrices for two players.
-
-    Returns:
-
-    """
     # mask dominated pure strategies
     dominated_mask1, dominated_min_payoff_diff1 = get_dominated_mask(G[0], extent=True)
     dominated_mask2, dominated_min_payoff_diff2 = get_dominated_mask(G[1].T, extent=True)
@@ -47,7 +41,7 @@ def process_game(G, n_traces):
     nash_index = get_indeces(G, set_nash)
     # compute minimax strategies and payoffs
     maxmin_payoffs = get_maxmin_payoff(G)
-
+    
     return (dominated_mask, dominated_min_payoff_diff, rationalizable_mask, set_nash, set_nash_payoffs, 
             pure_nash_mask, pareto_nash_mask, utilitarian_nash_mask, payoff_dominance_mask, harsanyi_selten_mask,
             harsanyi_selten_traces, harsanyi_selten_traces_reldiff, nash_index, maxmin_payoffs)
@@ -67,19 +61,19 @@ def label_dataset(dataset, n_traces=1000, n_workers=os.cpu_count(), batch_size=2
     """
     total_games = len(dataset)
     print(f"\nTotal games: {total_games}")
-
+    
     # Create batches
     batches = [dataset[i:i + batch_size] for i in range(0, total_games, batch_size)]
     all_results = []
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
         for batch_results in tqdm(executor.map(process_batch, batches, [n_traces]*len(batches)), total=len(batches)):
             all_results.extend(batch_results)
-
+    
     # Unpack results
     (dominated_mask, dominated_min_payoff_diff, rationalizable_mask, set_nash, set_nash_payoffs, 
      pure_nash_mask, pareto_nash_mask, utilitarian_nash_mask, payoff_dominance_mask, harsanyi_selten_mask,
      harsanyi_selten_traces, harsanyi_selten_traces_reldiff, nash_index, maxmin_payoffs) = zip(*all_results)
-
+    
     # Create labels dictionary
     labels = {
         'set_nash': set_nash,
@@ -97,7 +91,7 @@ def label_dataset(dataset, n_traces=1000, n_workers=os.cpu_count(), batch_size=2
         'nash_index': nash_index,
         'maxmin_payoffs': maxmin_payoffs,
     }
-
+    
     return labels
 
 
@@ -116,22 +110,37 @@ def analyze_dataset(labels):
         'n_index_zero' : broadcast(labels['nash_index'], lambda x : np.sum(x == 0)),    # almost surely unique  
         'n_index_plus' : broadcast(labels['nash_index'], lambda x : np.sum(x == 1)),
     }
-    return statistics
+    
+    # Create summary statistics dictionary
+    n_games = len(statistics['n_nash'])
+    summary_statistics = {
+        'n_games': n_games,
+        'n_nash_count': get_count(statistics['n_nash']) / n_games,
+        'n_pure_nash_count': get_count(statistics['n_pure_nash']) / n_games,
+        'n_dominated_count': get_count(statistics['n_dominated'], axis=0) / n_games,
+        'n_rationalizable_profiles_count': get_count(statistics['n_rationalizable'].prod(axis=1)) / n_games,
+        'n_pareto_optimal_count': get_count(statistics['n_pareto_optimal']) / n_games,
+        'n_payoff_dominant_count': get_count(statistics['n_payoff_dominant']) / n_games,
+    }
+    return statistics, summary_statistics
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate and label evaluation set.')
     parser.add_argument('--n_games', type=int, default=2**17, help='Total number of games to generate and label for the evaluation set. Default is 2^17.')
     parser.add_argument('--n_actions', type=int, default=2, help='Number of actions of each player. Default is 2')
-    parser.add_argument('--payoffs_space', type=str, default="sphere_orthogonal", help='Payoffs space')
+    parser.add_argument('--payoffs_space', type=str, default="sphere_preferences", help='Payoffs space')
     parser.add_argument('--game_class', type=str, default="general_sum", help='Class of games. Default is general_sum')
-    parser.add_argument('--n_traces', type=int, default=1000, help='Trace lenght for Harsanyi-Selten linear tracing procedure')  
+    parser.add_argument('--n_traces', type=int, default=100, help='Trace lenght for Harsanyi-Selten linear tracing procedure')  
+    parser.add_argument('--normal_vectors', type=str, default="[[], []]", help='Normal vectors to define subspaces. Example: "[[],[1,-1,-1,1]]"')
     parser.add_argument('--name', type=str, default=None, help='Dataset name')
     args = parser.parse_args()
+    args.normal_vectors = json.loads(args.normal_vectors)
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     
-    rand_bimatrix = BimatrixSampler(n_actions=args.n_actions, payoffs_space=args.payoffs_space, game_class=args.game_class, dtype=torch.float64)
+    rand_bimatrix = BimatrixSampler(n_actions=args.n_actions, payoffs_space=args.payoffs_space, 
+                                    game_class=args.game_class, normal_vectors=args.normal_vectors, dtype=torch.float64)
     
     os.system('cls' if os.name == 'nt' else 'clear')
     
@@ -142,6 +151,6 @@ if __name__ == "__main__":
     labels = label_dataset(dataset, n_traces=args.n_traces)
 
     print(f"Computing statistics... ")
-    statistics = analyze_dataset(labels)
+    statistics, summary_statistics = analyze_dataset(labels)
     
-    save_dataset(dataset, labels, statistics, timestamp, args)
+    save_dataset(dataset, labels, statistics, summary_statistics, timestamp, args)
