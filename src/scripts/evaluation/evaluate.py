@@ -314,73 +314,36 @@ def main():
     #        print_and_log(f'\n\n[[[ {k} NASH EQUILIBRIA ]]]', f)
     #        print_evaluation_results(evaluation_output, statistics, has_k_ne, f=f)
 
-    #n_payoffs = dataset_metadata['n_actions']**2
-    #u = np.ones(n_payoffs)
-    #u_target = np.zeros(n_payoffs)
-    #u_target[-1] = np.linalg.norm(u)
-    #v = u - u_target
-    #H = np.eye(n_payoffs) - 2 * np.outer(v, v) / np.dot(v, v)
-    #A_vec = testing_set[:,0,:,:].reshape(-1, n_payoffs)
-    #B_vec = testing_set[:,1,:,:].reshape(-1, n_payoffs)
-    # inverse rotation and selection of first entry 
-    #lower_spheres = np.stack([np.matmul(A_vec, H), np.matmul(B_vec, H)], axis=1)
-    #signs = np.sign(lower_spheres[:,:,n_payoffs-3:n_payoffs-1])
-    #halfsphere_mask = np.all(signs == signs[:, :, [0]], axis=(1,2))
+    v_norm_A, v_norm_B = simulation_metadata['training_set']['normal_vectors']
+    if v_norm_A or v_norm_A:
+        A_vec = testing_set[:,0,:,:].transpose(0,2,1).reshape(-1, dataset_metadata['n_actions']**2)
+        B_vec = testing_set[:,1,:,:].reshape(-1, dataset_metadata['n_actions']**2)
+        A_inners = np.matmul(A_vec, np.array(v_norm_A)) if v_norm_A else np.ones_like(A_vec)
+        B_inners = np.matmul(B_vec, np.array(v_norm_B)) if v_norm_B else np.ones_like(B_vec)
+        subspace_mask = np.logical_and(A_inners>0, B_inners>0)
 
-    '''
-    if 'hemi' in simulation_metadata['payoffs_space'] or 'half' in simulation_metadata['payoffs_space']:
-        n_payoffs = dataset_metadata['n_actions']**2
-        v = np.ones(n_payoffs)    
-        v[:n_payoffs//2] = -1.0
-        v /= np.linalg.norm(v)
-        A_vec = testing_set[:,0,:,:].reshape(-1, n_payoffs)
-        B_vec = testing_set[:,1,:,:].reshape(-1, n_payoffs)
-        mask = None
-        if simulation_metadata['payoffs_space'] == 'hemisphere_orthogonal':
-            # compute hemisphere mask
-            A_inners = np.matmul(A_vec, v)
-            B_inners = np.matmul(B_vec, v)
-            mask = np.logical_and(A_inners>0,B_inners>0)
-        if simulation_metadata['payoffs_space'] == 'halfsphere_orthogonal':
-            # compute halfsphere mask
-            u = np.ones(n_payoffs)    
-            u[::2] = -1.0
-            u /= np.linalg.norm(u)
-            A_inners_u = np.matmul(A_vec, u)
-            A_inners_v = np.matmul(A_vec, v)
-            B_inners_u = np.matmul(B_vec, u)
-            B_inners_v = np.matmul(B_vec, v)
-            mask_A = np.sign(A_inners_u) == np.sign(A_inners_v)
-            mask_B = np.sign(B_inners_u) == np.sign(B_inners_v)
-            mask = np.logical_and(mask_A, mask_B)
+        print_and_log('\n\n[[SUBSPACE]]', f)
+        print_evaluation_results(evaluation_output, statistics, subspace_mask, f=f)
 
-        print_and_log('\n\n[[HALF SPHERES]]', f)
-        halfsphere_mask = mask
-        print_evaluation_results(evaluation_output, statistics, halfsphere_mask, f=f)
+        print_and_log('\n\n[[SUBSPACE - 0 PURE NASH EQUILIBRIA ]]', f)
+        subspace_zero_pure_nash_mask = np.logical_and(subspace_mask,zero_pure_nash_mask)
+        print_evaluation_results(evaluation_output, statistics, subspace_zero_pure_nash_mask, f=f)
 
-        print_and_log('\n\n[[HALF SPHERES - 0 PURE NASH EQUILIBRIA ]]', f)
-        halfsphere_zero_pure_nash_mask = np.logical_and(halfsphere_mask,zero_pure_nash_mask)
-        print_evaluation_results(evaluation_output, statistics, halfsphere_zero_pure_nash_mask, f=f)
+        print_and_log('\n\n[[SUBSPACE - 1 PURE NASH EQUILIBRIA ]]', f)
+        subspace_one_pure_nash_mask = np.logical_and(subspace_mask,one_pure_nash_mask)
+        print_evaluation_results(evaluation_output, statistics, subspace_one_pure_nash_mask, f=f)
 
-        print_and_log('\n\n[[HALF SPHERES - 1 PURE NASH EQUILIBRIA ]]', f)
-        halfsphere_one_pure_nash_mask = np.logical_and(halfsphere_mask,one_pure_nash_mask)
-        print_evaluation_results(evaluation_output, statistics, halfsphere_one_pure_nash_mask, f=f)
+        print_and_log('\n\n[[COMPLEMENT OF SUBSPACE]]', f)
+        subspace_c_mask = ~subspace_mask
+        print_evaluation_results(evaluation_output, statistics, subspace_c_mask, f=f)
 
-        print_and_log('\n\n[[COMPLEMENT OF HALF SPHERES]]', f)
-        halfsphere_c_mask = ~halfsphere_mask
-        print_evaluation_results(evaluation_output, statistics, halfsphere_c_mask, f=f)
+        print_and_log('\n\n[[COMPLEMENT SUBSPACE - 0 PURE NASH EQUILIBRIA ]]', f)
+        subspace_c_zero_pure_nash_mask = np.logical_and(subspace_c_mask,zero_pure_nash_mask)
+        print_evaluation_results(evaluation_output, statistics, subspace_c_zero_pure_nash_mask, f=f)
 
-        print_and_log('\n\n[[COMPLEMENT HALF SPHERES - 0 PURE NASH EQUILIBRIA ]]', f)
-        halfsphere_c_zero_pure_nash_mask = np.logical_and(halfsphere_c_mask,zero_pure_nash_mask)
-        print_evaluation_results(evaluation_output, statistics, halfsphere_c_zero_pure_nash_mask, f=f)
-
-        print_and_log('\n\n[[COMPLEMENT HALF SPHERES - 1 PURE NASH EQUILIBRIA ]]', f)
-        halfsphere_c_one_pure_nash_mask = np.logical_and(halfsphere_c_mask,one_pure_nash_mask)
-        print_evaluation_results(evaluation_output, statistics, halfsphere_c_one_pure_nash_mask, f=f)
-    '''
-
-    #print_and_log('\n\n[[COMPLEMENT HALF SPHERES & 0 PURE NASH EQUILIBRIA ]]', f)
-    #print_evaluation_results(evaluation_output, statistics, np.logical_and(halfsphere_c_mask,zero_pure_nash_mask), f=f)
+        print_and_log('\n\n[[COMPLEMENT SUBSPACE - 1 PURE NASH EQUILIBRIA ]]', f)
+        subspace_c_one_pure_nash_mask = np.logical_and(subspace_c_mask,one_pure_nash_mask)
+        print_evaluation_results(evaluation_output, statistics, subspace_c_one_pure_nash_mask, f=f)
     
     epsilon_distance_nash = np.max(regret_profile, axis=1)
     n_actions = dataset_metadata['n_actions']
