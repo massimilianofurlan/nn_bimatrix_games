@@ -9,7 +9,7 @@ from src.utilities.eval_utils import evaluate
 from src.utilities.viz_utils import plot_cdfs
 from src.utilities.io_utils import print_metadata, preview_dataset, log_metadata, save_to_pickle, print_and_log
 
-gamma = 0.05
+gamma = 0.025
 
 def broadcast(list_arr, func, **kwargs):
     return np.array([func(arr, **kwargs) for arr in list_arr])
@@ -289,9 +289,13 @@ def main():
     one_pure_nash_mask = statistics['n_pure_nash'] == 1
     print_evaluation_results(evaluation_output, statistics, one_pure_nash_mask, f=f)
 
-    print_and_log('\n\n[[[ >= 1 PURE NASH EQUILIBRIA ]]]', f)
-    multiple_pure_nash_mask = statistics['n_pure_nash'] >= 1
+    print_and_log('\n\n[[[ > 1 PURE NASH EQUILIBRIA ]]]', f)
+    multiple_pure_nash_mask = statistics['n_pure_nash'] > 1
     print_evaluation_results(evaluation_output, statistics, multiple_pure_nash_mask, f=f)
+
+    print_and_log('\n\n[[[ >= 1 PURE NASH EQUILIBRIA ]]]', f)
+    some_pure_nash_mask = np.logical_or(one_pure_nash_mask, multiple_pure_nash_mask)
+    print_evaluation_results(evaluation_output, statistics, some_pure_nash_mask, f=f)
 
     print_and_log(f'\n\n[[[ > 1 NASH EQUILIBRIUM & IS {2*gamma}-NASH ]]]', f)
     multiple_nash_mask = statistics['n_nash'] > 1
@@ -315,11 +319,11 @@ def main():
     #        print_evaluation_results(evaluation_output, statistics, has_k_ne, f=f)
 
     v_norm_A, v_norm_B = simulation_metadata['training_set']['normal_vectors']
-    if v_norm_A or v_norm_A:
+    if v_norm_A or v_norm_B:
         A_vec = testing_set[:,0,:,:].transpose(0,2,1).reshape(-1, dataset_metadata['n_actions']**2)
         B_vec = testing_set[:,1,:,:].reshape(-1, dataset_metadata['n_actions']**2)
-        A_inners = np.matmul(A_vec, np.array(v_norm_A)) if v_norm_A else np.ones_like(A_vec)
-        B_inners = np.matmul(B_vec, np.array(v_norm_B)) if v_norm_B else np.ones_like(B_vec)
+        A_inners = np.matmul(A_vec, np.array(v_norm_A)) if v_norm_A else np.ones(A_vec.shape[0])
+        B_inners = np.matmul(B_vec, np.array(v_norm_B)) if v_norm_B else np.ones(B_vec.shape[0])
         subspace_mask = np.logical_and(A_inners>0, B_inners>0)
 
         print_and_log('\n\n[[SUBSPACE]]', f)
@@ -333,6 +337,10 @@ def main():
         subspace_one_pure_nash_mask = np.logical_and(subspace_mask,one_pure_nash_mask)
         print_evaluation_results(evaluation_output, statistics, subspace_one_pure_nash_mask, f=f)
 
+        print_and_log('\n\n[[SUBSPACE - >1 PURE NASH EQUILIBRIA ]]', f)
+        subspace_multiple_pure_nash_mask = np.logical_and(subspace_mask,multiple_nash_mask)
+        print_evaluation_results(evaluation_output, statistics, subspace_multiple_pure_nash_mask, f=f)
+    
         print_and_log('\n\n[[COMPLEMENT OF SUBSPACE]]', f)
         subspace_c_mask = ~subspace_mask
         print_evaluation_results(evaluation_output, statistics, subspace_c_mask, f=f)
@@ -344,6 +352,10 @@ def main():
         print_and_log('\n\n[[COMPLEMENT SUBSPACE - 1 PURE NASH EQUILIBRIA ]]', f)
         subspace_c_one_pure_nash_mask = np.logical_and(subspace_c_mask,one_pure_nash_mask)
         print_evaluation_results(evaluation_output, statistics, subspace_c_one_pure_nash_mask, f=f)
+    
+        print_and_log('\n\n[[COMPLEMENT SUBSPACE - >1 PURE NASH EQUILIBRIA ]]', f)
+        subspace_c_multiple_pure_nash_mask = np.logical_and(subspace_c_mask,multiple_nash_mask)
+        print_evaluation_results(evaluation_output, statistics, subspace_c_multiple_pure_nash_mask, f=f)
     
     epsilon_distance_nash = np.max(regret_profile, axis=1)
     n_actions = dataset_metadata['n_actions']
