@@ -57,13 +57,13 @@ if __name__ == "__main__":
 
     # visualize to terminal
     print(f"\nModel: ")
-    print_metadata(simulation_metadata)
+    print_metadata(**simulation_metadata)
 
 
     # all done
     print(f"All done")
 
-    n_actions_model = simulation_metadata['n_actions']
+    n_actions_model = simulation_metadata['training_set']['n_actions']
     games = read_games_from_file("games.txt")
     n_traces = 10000
 

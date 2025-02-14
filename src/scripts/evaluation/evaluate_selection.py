@@ -27,7 +27,7 @@ testing_set, dataset_metadata, dataset_dir = select_dataset(dataset_dir=args.dat
 
 # visualize to terminal
 print(f"\nModel: ")
-print_metadata(simulation_metadata)
+print_metadata(**simulation_metadata)
 print(f"\nEvaluating on: ")
 preview_dataset(dataset_metadata, testing_set)
 
@@ -123,13 +123,13 @@ harsanyiselten_is_utilitarian_mask = np.array([np.all(harsanyiselten_mask[z] == 
 mask = multiple_nash_mask & is_gamma_nash & harsanyiselten_is_utilitarian_mask
 print_and_log(f"When Harsanyi-Selten is Utilitarian {np.sum(mask)}", f)
 create_comparison_table(closest_nash_is_harsanyiselten[mask], closest_nash_is_utilitarian[mask], 
-                        "Harsanyi-Selten", "Payoff Dominant", f)
+                        "Harsanyi-Selten", "Utilitarian", f)
 
 harsanyiselten_is_not_utilitarian_mask = ~harsanyiselten_is_utilitarian_mask
 mask = multiple_nash_mask & is_gamma_nash & harsanyiselten_is_not_utilitarian_mask
 print_and_log(f"When Harsanyi-Selten is not Utilitarian {np.sum(mask)}", f)
 create_comparison_table(closest_nash_is_harsanyiselten[mask], closest_nash_is_utilitarian[mask], 
-                        "Harsanyi-Selten", "Payoff Dominant", f)
+                        "Harsanyi-Selten", "Utilitarian", f)
 
 
 

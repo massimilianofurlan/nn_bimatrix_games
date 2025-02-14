@@ -9,6 +9,7 @@ from src.utilities.data_utils import *
 from src.utilities.eval_utils import *
 from src.utilities.viz_utils import *
 from src.utilities.io_utils import *
+from src.modules.sampler import BimatrixSampler
 
 parser = argparse.ArgumentParser(description="Evaluate a model on a dataset of games")
 parser.add_argument('--model', type=str, default=None, help="Model folder")
@@ -169,20 +170,20 @@ with torch.no_grad():
 ##################### BEST REPLY INVARIANCE (2) #####################
 #####################################################################
 
-print('\nTest 3/4 - Invariance to Affine Best Reply Structure Preserving Transformations ...')
+print('\nTest 3/4 - Invariance to Best Reply Structure Preserving Transformations ...')
 
-def rand_affine_bestreply_preserving_transformation(game_batch, n_transf, device = 'cpu'):
-    # generate random best reply preserving trasformation  a_j + b u_i( . ,j)
-    batch_size, n_players, n_actions, _ = game_batch.shape
-    a1 = torch.rand(n_transf, batch_size, n_actions, device = device) * n_actions * 2
-    a1 = a1.unsqueeze(-1).expand(n_transf, batch_size, n_actions, n_actions)
-    a1 = a1.permute(0,1,3,2)
-    a2 = torch.rand(n_transf, batch_size, n_actions, device = device) * n_actions * 2
-    a2 = a2.unsqueeze(-1).expand(n_transf, batch_size, n_actions, n_actions)
-    a = torch.stack([a1,a2],dim=2)
-    b = torch.rand(n_transf, batch_size, n_players, device = device) * (n_actions-1.0) + 1.0
-    b = b.view(n_transf, batch_size, n_players, 1, 1)
-    return a + b * game_batch 
+#def rand_affine_bestreply_preserving_transformation(game_batch, n_transf, device = 'cpu'):
+#    # generate random best reply preserving trasformation  a_j + b u_i( . ,j)
+#    batch_size, n_players, n_actions, _ = game_batch.shape
+#    a1 = torch.rand(n_transf, batch_size, n_actions, device = device) * n_actions * 2
+#    a1 = a1.unsqueeze(-1).expand(n_transf, batch_size, n_actions, n_actions)
+#    a1 = a1.permute(0,1,3,2)
+#    a2 = torch.rand(n_transf, batch_size, n_actions, device = device) * n_actions * 2
+#    a2 = a2.unsqueeze(-1).expand(n_transf, batch_size, n_actions, n_actions)
+#    a = torch.stack([a1,a2],dim=2)
+#    b = torch.rand(n_transf, batch_size, n_players, device = device) * (n_actions-1.0) + 1.0
+#    b = b.view(n_transf, batch_size, n_players, 1, 1)
+#    return a + b * game_batch 
 
 n_transf = 64
 n_extended_games = n_games * n_transf

@@ -35,15 +35,15 @@ statistics = load_statistics(dataset_dir)
 print(f"All done")
 
 # Iterate over model steps from 0 to 128 included
-
-exp = np.ceil(np.log10(simulation_metadata['optimization_steps'])).astype(int)
+n_optim_steps = simulation_metadata['optimization']['optimization_steps']
+exp = np.ceil(np.log10(n_optim_steps)).astype(int)
 model_log_steps = np.unique(np.logspace(0, exp, num=20*exp+1, dtype=int))
-model_log_steps = model_log_steps[model_log_steps <= simulation_metadata['optimization_steps']]
+model_log_steps = model_log_steps[model_log_steps <= n_optim_steps]
 evaluation_outputs = []
 for step in model_log_steps:
     # Load models
-    model1 = load_model(simulation_metadata, f'models/{model_dir}/models_log/model1_{step}.pth', device).eval()
-    model2 = load_model(simulation_metadata, f'models/{model_dir}/models_log/model2_{step}.pth', device).eval()
+    model1 = load_model(simulation_metadata['model1'], f'models/{model_dir}/models_log/model1_{step}.pth', device).eval()
+    model2 = load_model(simulation_metadata['model2'], f'models/{model_dir}/models_log/model2_{step}.pth', device).eval()
     evaluation_output = evaluate(model1, model2, testing_set, labels, device)
     evaluation_outputs.append(evaluation_output)
     print(f'Step {step}\n')
