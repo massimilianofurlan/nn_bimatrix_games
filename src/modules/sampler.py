@@ -62,10 +62,10 @@ class BimatrixSampler:
     def generate_rotations(self):
         # generate householder rotation for space of preferences (1 rotation)
         u = torch.ones(self.n_payoffs, device=self.device, dtype=self.dtype)
-        u_target = torch.zeros(u.shape[0], device=self.device, dtype=self.dtype)
+        u_target = torch.zeros(self.n_payoffs, device=self.device, dtype=self.dtype)
         u_target[-1] = torch.linalg.norm(u)
         v = u - u_target
-        Hpr = torch.eye(u.shape[0], device=self.device, dtype=self.dtype) - 2 * torch.outer(v, v) / torch.dot(v, v)
+        Hpr = torch.eye(self.n_payoffs, device=self.device, dtype=self.dtype) - 2 * torch.outer(v, v) / torch.dot(v, v)
         # generate householder rotation for space of best-reply (n_payoffs rotations)
         Hbr = torch.eye(self.n_payoffs, device=self.device, dtype=self.dtype)
         for k in range(self.n_actions):
@@ -93,8 +93,7 @@ class BimatrixSampler:
         # which has n_actions^2 - n_actions zeros, followed by n_actions - 1 ones and a final zero entry
         # eg, for 3x3 games c_orth is proportional to (0, 0, 0, 0, 0, 0, 1, 1, 0)'
         c_orth = torch.zeros(self.n_actions**2, device=self.device, dtype=self.dtype)
-        c_orth[-self.n_actions:-1] = 1
-        c_orth *= self.n_actions / c_orth.norm()
+        c_orth[-self.n_actions:-1] = self.n_actions / torch.sqrt(torch.tensor(self.n_actions - 1))
         return c_orth.requires_grad_(False)
     
     def reflect(self, x, v_norm):
@@ -156,6 +155,19 @@ class BimatrixSampler:
         # apply householder rotation
         x = torch.matmul(y_ext, self.Hpr.T)
         return x
+    
+    #def get_equivalent_strategic_sphere(self, x_ref):
+    #    # returns a payoff vector that is best-reply equivalent to x_ref
+    #    # invert rotation, get point in preferences space x_ref -> (y',0)'
+    #    y_ext = torch.matmul(x_ref, Hpr)
+    #    # rotate point along c_orth into strategic space (y',0)' -> (z',0,..,0)
+    #    sin_t = torch.ones(batch_size, n_actions**2)
+    #    sin_t[:,n_actions**2-n_actions:-1] = y_ext[:,n_actions**2-n_actions:-1] * ((n_actions-1)**(1/2)/n_actions)
+    #    cos_t = y_ext[:,:n_actions**2-n_actions].norm(dim=1, keepdim=True) / n_actions
+    #    z_ext = (y_ext - c_orth * sin_t) / cos_t
+    #    # augment point in strategic space to preferences space (z',0,..,0) -> x
+    #    x = torch.matmul(z_ext, Hbr.T)
+    #    return x
     
     def rand_generalsum_bimatrix(self, batch_size):
         # sample general-sum bimatrix game
