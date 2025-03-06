@@ -32,7 +32,7 @@ testing_set, dataset_metadata, dataset_dir = select_dataset(dataset_dir=args.dat
 
 # visualize to terminal
 print(f"\nModel: ")
-print_metadata(simulation_metadata)
+print_metadata(**simulation_metadata)
 print(f"\nEvaluating on: ")
 preview_dataset(dataset_metadata, testing_set)
 
@@ -172,18 +172,33 @@ with torch.no_grad():
 
 print('\nTest 3/4 - Invariance to Best Reply Structure Preserving Transformations ...')
 
-#def rand_affine_bestreply_preserving_transformation(game_batch, n_transf, device = 'cpu'):
-#    # generate random best reply preserving trasformation  a_j + b u_i( . ,j)
-#    batch_size, n_players, n_actions, _ = game_batch.shape
-#    a1 = torch.rand(n_transf, batch_size, n_actions, device = device) * n_actions * 2
-#    a1 = a1.unsqueeze(-1).expand(n_transf, batch_size, n_actions, n_actions)
-#    a1 = a1.permute(0,1,3,2)
-#    a2 = torch.rand(n_transf, batch_size, n_actions, device = device) * n_actions * 2
-#    a2 = a2.unsqueeze(-1).expand(n_transf, batch_size, n_actions, n_actions)
-#    a = torch.stack([a1,a2],dim=2)
-#    b = torch.rand(n_transf, batch_size, n_players, device = device) * (n_actions-1.0) + 1.0
-#    b = b.view(n_transf, batch_size, n_players, 1, 1)
-#    return a + b * game_batch 
+def rand_affine_bestreply_preserving_transformation(game_batch, n_transf, device = 'cpu'):
+    # generate random best reply preserving trasformation  a_j + b u_i( . ,j)
+    batch_size, n_players, n_actions, _ = game_batch.shape
+    a1 = torch.rand(n_transf, batch_size, n_actions, device = device) * n_actions * 2
+    a1 = a1.unsqueeze(-1).expand(n_transf, batch_size, n_actions, n_actions)
+    a1 = a1.permute(0,1,3,2)
+    a2 = torch.rand(n_transf, batch_size, n_actions, device = device) * n_actions * 2
+    a2 = a2.unsqueeze(-1).expand(n_transf, batch_size, n_actions, n_actions)
+    a = torch.stack([a1,a2],dim=2)
+    b = torch.rand(n_transf, batch_size, n_players, device = device) * (n_actions-1.0) + 1.0
+    b = b.view(n_transf, batch_size, n_players, 1, 1)
+    return a + b * game_batch 
+
+'''
+def get_equivalent_strategic_sphere(self, x_ref):
+    # returns a payoff vector that is best-reply equivalent to x_ref
+    # invert rotation, get point in preferences space x_ref -> (y',0)'
+    y_ext = torch.matmul(x_ref, Hpr)
+    # rotate point along c_orth into strategic space (y',0)' -> (z',0,..,0)
+    sin_t = torch.ones(batch_size, n_actions**2)
+    sin_t[:,n_actions**2-n_actions:-1] = y_ext[:,n_actions**2-n_actions:-1] * ((n_actions-1)**(1/2)/n_actions)
+    cos_t = y_ext[:,:n_actions**2-n_actions].norm(dim=1, keepdim=True) / n_actions
+    z_ext = (y_ext - c_orth * sin_t) / cos_t
+    # augment point in strategic space to preferences space (z',0,..,0) -> x
+    x = torch.matmul(z_ext, Hbr.T)
+    return x
+'''
 
 n_transf = 64
 n_extended_games = n_games * n_transf

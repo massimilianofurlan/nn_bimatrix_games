@@ -50,27 +50,27 @@ for step in model_log_steps:
 
 final_evaluation = load_from_pickle(f'models/{model_dir}/{dataset_dir}/evaluation_output.pkl')
 evaluation_outputs.append(final_evaluation)
-model_log_steps = np.append(model_log_steps,simulation_metadata['optimization_steps'])
+model_log_steps = np.append(model_log_steps,n_optim_steps)
 # SAVE WHEN COMPUTING
-#save_to_pickle(evaluation_outputs, f'models/{model_dir}/{dataset_dir}/learning_outputs.pkl')
+save_to_pickle(evaluation_outputs, f'models/{model_dir}/{dataset_dir}/learning_outputs.pkl')
 
 # LOAD IF ALREADY COMPUTED (but add final evaluation)
-evaluation_outputs = load_from_pickle(f'models/{model_dir}/{dataset_dir}/learning_outputs.pkl')
+#evaluation_outputs = load_from_pickle(f'models/{model_dir}/{dataset_dir}/learning_outputs.pkl')
 
 regret_profiles = np.array([evaluation_outputs[step]['regret_profile'] for step in range(len(evaluation_outputs))], dtype=np.float16)
 closest_nash_distance = np.array([evaluation_outputs[step]['closest_nash_distance'] for step in range(len(evaluation_outputs))], dtype=np.float16)
 
-n_actions = simulation_metadata['n_actions']
-plot_learning_curves(regret_profiles.max(axis=2), statistics, model_log_steps[:-1], 
+n_actions = simulation_metadata['model1']['n_actions']
+plot_learning_curves(regret_profiles.max(axis=2), statistics, model_log_steps, 
                      f'models/{model_dir}/{dataset_dir}', file_name="avg_regrets.pdf", 
                      xlabel='Step', ylabel='Avg. MaxReg', 
                      title=rf'$\mathbf{{{n_actions} \times {n_actions}}}$ \textbf{{Games}}',
-                     legend_labels=[r'No Pure Nash ', r'Some Pure Nash'],
+                     legend_labels=[r'Some Pure Nash ', r'No Pure Nash'],
                      confidence = 0)
 
 plot_learning_curves(closest_nash_distance, statistics, model_log_steps, 
                      f'models/{model_dir}/{dataset_dir}', file_name="avg_gamma.pdf", 
                      xlabel='Step', ylabel='Avg. MaxDistNash', 
                      title=rf'$\mathbf{{{n_actions} \times {n_actions}}}$ \textbf{{Games}}',
-                     legend_labels=[r'No Pure Nash', r'Some Pure Nash'],
+                     legend_labels=[r'Some Pure Nash', r'No Pure Nash'],
                      confidence = 0)

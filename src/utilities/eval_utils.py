@@ -122,8 +122,8 @@ def evaluate(model1: torch.nn.Module, model2: torch.nn.Module, testing_set: np.n
             #q = torch.ones((batch_size,n_actions), dtype=torch.float32, device='mps')/n_actions
 
             # compute regrets
-            regret_profile[start_index:end_index, 0] = Loss.regret(G, p, q)
-            regret_profile[start_index:end_index, 1] = Loss.regret(G_transpose, q, p)
+            regret_profile[start_index:end_index, 0] = Loss.regret(G, p, q)             #/ (G[:,0,:,:].amax(dim=(1,2)) - G[:,0,:,:].amin(dim=(1,2)))
+            regret_profile[start_index:end_index, 1] = Loss.regret(G_transpose, q, p)   #/ (G[:,1,:,:].amax(dim=(1,2)) - G[:,1,:,:].amin(dim=(1,2)))
             
             # compute expected payoffs 
             expected_payoff_profile[start_index:end_index,0] = get_expected_payoff(G,p,q)

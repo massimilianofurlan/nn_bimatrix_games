@@ -9,6 +9,7 @@ from src.utilities.data_utils import load_dataset
 from src.utilities.training_utils import train
 from src.modules.loss_function import Loss
 from src.modules.sampler import BimatrixSampler
+from src.modules.sampler_2x2 import BimatrixSampler
 
 def main():
     parser = argparse.ArgumentParser(description="Train a model")
@@ -16,7 +17,7 @@ def main():
     parser.add_argument('--n_games', type=int, default=2**25, help="Number of games to train on")
     parser.add_argument('--config', type=str, default="2x2_example")    
     parser.add_argument('--batch_size', type=int, default=1024, help="Batch size for training")
-    parser.add_argument('--optimizer', type=str, default="SGD", choices=["SGD", "Adam"], help="Optimizer (Adam or SGD)")
+    parser.add_argument('--optimizer', type=str, default="SGD", choices=["SGD", "Adam", "OMD"], help="Optimizer (Adam or SGD)")
     parser.add_argument('--lr', type=float, default=0.01, help="Learning rate")
     parser.add_argument('--gamma', type=float, default=1, help="Decay rate for LR scheduler")
     parser.add_argument('--init_model', type=str, default=None, help="Pre-trained model")    
