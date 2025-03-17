@@ -9,7 +9,6 @@ from src.utilities.data_utils import load_dataset
 from src.utilities.training_utils import train
 from src.modules.loss_function import Loss
 from src.modules.sampler import BimatrixSampler
-from src.modules.sampler_2x2 import BimatrixSampler
 
 def main():
     parser = argparse.ArgumentParser(description="Train a model")
