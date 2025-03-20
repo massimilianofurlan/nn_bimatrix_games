@@ -172,38 +172,41 @@ with torch.no_grad():
 
 print('\nTest 3/4 - Invariance to Best Reply Structure Preserving Transformations ...')
 
-def rand_affine_bestreply_preserving_transformation(game_batch, n_transf, device = 'cpu'):
-    # generate random best reply preserving trasformation  a_j + b u_i( . ,j)
+def get_rand_equivalent_game(game_batch, n_transf, device = 'cpu'):
+    # sample uniformlly from the sapce of games that are best reply equivalent to A
     batch_size, n_players, n_actions, _ = game_batch.shape
-    a1 = torch.rand(n_transf, batch_size, n_actions, device = device) * n_actions * 2
-    a1 = a1.unsqueeze(-1).expand(n_transf, batch_size, n_actions, n_actions)
-    a1 = a1.permute(0,1,3,2)
-    a2 = torch.rand(n_transf, batch_size, n_actions, device = device) * n_actions * 2
-    a2 = a2.unsqueeze(-1).expand(n_transf, batch_size, n_actions, n_actions)
-    a = torch.stack([a1,a2],dim=2)
-    b = torch.rand(n_transf, batch_size, n_players, device = device) * (n_actions-1.0) + 1.0
-    b = b.view(n_transf, batch_size, n_players, 1, 1)
-    return a + b * game_batch 
-
-'''
-def get_equivalent_strategic_sphere(self, x_ref):
-    # returns a payoff vector that is best-reply equivalent to x_ref
-    # invert rotation, get point in preferences space x_ref -> (y',0)'
-    y_ext = torch.matmul(x_ref, Hpr)
-    # rotate point along c_orth into strategic space (y',0)' -> (z',0,..,0)
-    sin_t = torch.ones(batch_size, n_actions**2)
-    sin_t[:,n_actions**2-n_actions:-1] = y_ext[:,n_actions**2-n_actions:-1] * ((n_actions-1)**(1/2)/n_actions)
-    cos_t = y_ext[:,:n_actions**2-n_actions].norm(dim=1, keepdim=True) / n_actions
+    # initialize rotation matrices and rotation direction
+    rand_bimatrix = BimatrixSampler(n_actions=2, device=device)
+    Hpr, c_orth = rand_bimatrix.Hpr, rand_bimatrix.c_orth
+    # extract games
+    A, B = game_batch[:,0,:,:], game_batch[:,1,:,:]
+    # vectorize
+    A_vec = A.transpose(1,2).reshape(batch_size,n_actions**2)
+    B_vec = B.reshape(batch_size,n_actions**2)
+    G_vec = torch.stack([A_vec, B_vec],dim=1)
+    # rotate into strategic subspace z_ext = (z1, z2, 0, 0)
+    y_ext = torch.matmul(G_vec, Hpr)
+    sin_t = torch.ones_like(y_ext, device=device)
+    sin_t[:,:,n_actions**2-n_actions:-1] = y_ext[:,:,n_actions**2-n_actions:-1] * ((n_actions-1)**(1/2)/n_actions)
+    cos_t = torch.norm(y_ext[:,:,:n_actions**2-n_actions], dim=2, keepdim=True) / n_actions
     z_ext = (y_ext - c_orth * sin_t) / cos_t
-    # augment point in strategic space to preferences space (z',0,..,0) -> x
-    x = torch.matmul(z_ext, Hbr.T)
-    return x
-'''
+    z_ext = z_ext.unsqueeze(0).expand(n_transf, -1, -1, -1)
+    # apply random rotation to z_ext ( uniform in [-π/2, π/2] along c_orth )
+    t = (torch.rand((n_transf, batch_size, n_players, 1), device=device) * torch.pi - torch.pi / 2)
+    # rotate z_ext into {x \in R^{n} | sum(x)=0, ||x||=r} along orthogonal direction c_orth
+    # (y', 0)' <- cos(x) * (z', 0, ..., 0)' + sin(x) * c_orth
+    y_ext = torch.cos(t) * z_ext + torch.sin(t) * c_orth
+    # apply householder rotation
+    G_vec_equiv = torch.matmul(y_ext, Hpr.T)
+    # unvectorize
+    A = G_vec_equiv[:,:,0,:].view(n_transf, batch_size, n_actions, n_actions).transpose(2,3)
+    B = G_vec_equiv[:,:,1,:].view(n_transf, batch_size, n_actions, n_actions)
+    return torch.stack((A, B), dim=2)
 
 n_transf = 64
 n_extended_games = n_games * n_transf
 with torch.no_grad():
-    games_extended = rand_affine_bestreply_preserving_transformation(games, n_transf, device=device)
+    games_extended = get_rand_equivalent_game(games, n_transf, device=device)
     games_extended = games_extended.view(n_extended_games, n_players, n_actions, n_actions)
     strategies = torch.empty(n_extended_games, n_actions, device=device)
     start_time = time.time()
