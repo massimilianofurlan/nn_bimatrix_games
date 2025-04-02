@@ -73,10 +73,10 @@ def evaluate(model1: torch.nn.Module, model2: torch.nn.Module, testing_set: np.n
     # convert testing_set to tensor
     testing_set = np.array(testing_set, dtype=np.float32)
     testing_set = torch.tensor(testing_set, device=device, dtype=torch.float32, requires_grad=False)
-
+    
     n_games, n_players, n_actions, _ = testing_set.size() # n_actions may differ from model input size
     testing_set = border_game(testing_set, n_actions, model1.n_actions)
-
+    
     # Process labels
     set_nash = labels['set_nash']
     dominated_mask = torch.from_numpy(np.array(labels['dominated_mask'])).bool().to(device)
@@ -86,7 +86,7 @@ def evaluate(model1: torch.nn.Module, model2: torch.nn.Module, testing_set: np.n
     #payoff_dominant_mask = labels['payoff_dominance_mask']
     harsanyi_selten_mask = labels['harsanyi_selten_mask']
     nash_index = labels['nash_index']
-
+    
     strategy_profiles = torch.empty(n_games, n_players, n_actions, device=device, dtype=torch.float16)
     regret_profile = torch.empty(n_games, n_players, device=device, dtype=torch.float16)
     expected_payoff_profile = torch.empty(n_games, n_players, device=device)
@@ -99,7 +99,7 @@ def evaluate(model1: torch.nn.Module, model2: torch.nn.Module, testing_set: np.n
     #closest_nash_is_payoff_dominant = np.empty(n_games, dtype=bool)
     closest_nash_is_harsanyiselten = np.empty(n_games, dtype=bool)
     closest_nash_stability_index = np.empty(n_games, dtype=np.int8)
-
+    
     with torch.no_grad():  # Disable gradient computation during evaluation
         start_time = time.time()
         for start_index in range(0, n_games, batch_size):
@@ -107,11 +107,11 @@ def evaluate(model1: torch.nn.Module, model2: torch.nn.Module, testing_set: np.n
             end_index = start_index + min(batch_size, n_games - start_index)
             G = testing_set[start_index:end_index]
             G_transpose = transpose_game(G)
-
+            
             # Forward pass
             p = model1(G)
             q = model2(G_transpose)
-
+            
             # sample from uniform distribution on n_actions-simplex: x/|x| with x~Exp(1)
             #p = -torch.log(torch.rand((batch_size,n_actions), dtype=torch.float32, device='mps'))
             #p /= p.sum(axis=1, keepdim=True)
@@ -120,43 +120,40 @@ def evaluate(model1: torch.nn.Module, model2: torch.nn.Module, testing_set: np.n
             # constant uniform
             #p = torch.ones((batch_size,n_actions), dtype=torch.float32, device='mps')/n_actions
             #q = torch.ones((batch_size,n_actions), dtype=torch.float32, device='mps')/n_actions
-
+            
             # compute regrets
-            regret_profile[start_index:end_index, 0] = Loss.regret(G, p, q)             #/ (G[:,0,:,:].amax(dim=(1,2)) - G[:,0,:,:].amin(dim=(1,2)))
-            regret_profile[start_index:end_index, 1] = Loss.regret(G_transpose, q, p)   #/ (G[:,1,:,:].amax(dim=(1,2)) - G[:,1,:,:].amin(dim=(1,2)))
+            regret_profile[start_index:end_index, 0] = Loss.regret(G, p, q)             / (G[:,0,:,:].amax(dim=(1,2)) - G[:,0,:,:].amin(dim=(1,2)))
+            regret_profile[start_index:end_index, 1] = Loss.regret(G_transpose, q, p)   / (G[:,1,:,:].amax(dim=(1,2)) - G[:,1,:,:].amin(dim=(1,2)))
             
             # compute expected payoffs 
             expected_payoff_profile[start_index:end_index,0] = get_expected_payoff(G,p,q)
             expected_payoff_profile[start_index:end_index,1] = get_expected_payoff(G_transpose,q,p)
-
-            p = p[:,:n_actions]
-            q = q[:,:n_actions]
-
+            
             # Log strategy profiles
-            strategy_profiles[start_index:end_index, 0, :] = p
-            strategy_profiles[start_index:end_index, 1, :] = q
-
+            strategy_profiles[start_index:end_index, 0, :] = p[:,:n_actions]
+            strategy_profiles[start_index:end_index, 1, :] = q[:,:n_actions]
+            
             # Check if agents play dominated strategy with prob higher than 0.05
             mass_on_dominated[start_index:end_index, 0] = get_masked_probability(p, dominated_mask[start_index:end_index, 0, :])
             mass_on_dominated[start_index:end_index, 1] = get_masked_probability(q, dominated_mask[start_index:end_index, 1, :])
             mass_on_eliminated[start_index:end_index, 0] = get_masked_probability(p, ~rationalizable_mask[start_index:end_index, 0, :])
             mass_on_eliminated[start_index:end_index, 1] = get_masked_probability(q, ~rationalizable_mask[start_index:end_index, 1, :])
-
+            
             closest_nash_idx_, closest_nash_distance_ = get_closest_nash(strategy_profiles[start_index:end_index, :, :], set_nash[start_index:end_index])
             closest_nash_idx[start_index:end_index] = closest_nash_idx_
             closest_nash_distance[start_index:end_index] = closest_nash_distance_
-
+            
             closest_nash_is_pareto[start_index:end_index] = get_value(closest_nash_idx_, pareto_nash_mask[start_index:end_index])
             closest_nash_is_utilitarian[start_index:end_index] = get_value(closest_nash_idx_, utilitarian_nash_mask[start_index:end_index])
             #closest_nash_is_payoff_dominant[start_index:end_index] = get_value(closest_nash_idx_, payoff_dominant_mask[start_index:end_index])
             closest_nash_is_harsanyiselten[start_index:end_index] = get_value(closest_nash_idx_, harsanyi_selten_mask[start_index:end_index])
             closest_nash_stability_index[start_index:end_index] = get_value(closest_nash_idx_, nash_index[start_index:end_index])
-
+            
             progress_percentage = (end_index / n_games) * 100
             print(f"\rProgress: {progress_percentage:.2f}%, Time Elapsed: {time.time() - start_time:.0f} sec", end='', flush=True)
-
+    
     print("\nEvaluation complete.")
-
+    
     # Convert tensors to numpy arrays for serialization
     evaluation_output = {
         'strategy_profiles': strategy_profiles.cpu().numpy(),
@@ -172,5 +169,5 @@ def evaluate(model1: torch.nn.Module, model2: torch.nn.Module, testing_set: np.n
         'closest_nash_is_harsanyiselten': closest_nash_is_harsanyiselten,
         'closest_nash_stability_index': closest_nash_stability_index
     }
-
+    
     return evaluation_output

@@ -173,7 +173,7 @@ with torch.no_grad():
 print('\nTest 3/4 - Invariance to Best Reply Structure Preserving Transformations ...')
 
 def get_rand_equivalent_game(game_batch, n_transf, device = 'cpu'):
-    # sample uniformlly from the sapce of games that are best reply equivalent to A
+    # sample uniformlly from the sapce of games that are best reply equivalent to (A,B)
     batch_size, n_players, n_actions, _ = game_batch.shape
     # initialize rotation matrices and rotation direction
     rand_bimatrix = BimatrixSampler(n_actions=2, device=device)
