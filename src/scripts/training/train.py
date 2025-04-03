@@ -50,6 +50,7 @@ def main():
     
     # Bimatrix sampler
     rand_bimatrix = BimatrixSampler(**config['bimatrix'], set_games = training_set, device=device)
+    #rand_bimatrix = BimatrixSampler(supp1=[torch.pi/2,torch.pi], supp2=[3/2*torch.pi,2*torch.pi], strategic=False, device=device)
 
     # Generate metadata
     metadata, timestamp = generate_metadata(config, args)

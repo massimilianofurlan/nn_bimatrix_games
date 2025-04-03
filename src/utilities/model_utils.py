@@ -43,6 +43,7 @@ def generate_metadata(config, args):
         'payoffs_space': config['bimatrix']['payoffs_space'],
         'game_class': config['bimatrix']['game_class'],
         'normal_vectors': config['bimatrix']['normal_vectors'],
+        'warp': config['bimatrix']['warp'],
     }
     model1_metadata = {
         'n_actions': config['n_actions'],
