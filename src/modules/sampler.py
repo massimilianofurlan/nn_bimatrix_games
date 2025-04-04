@@ -1,15 +1,16 @@
 import torch
 
 class BimatrixSampler:
-    def __init__(self, n_actions: int, payoffs_space: str = "sphere_preferences", 
+    def __init__(self, n_actions: int, payoffs_space: str = "sphere_preferences", warp: bool = False,
                        game_class: str = "general_sum", set_games: torch.Tensor | None = None,
                        normal_vectors = [[], []], device: str = 'cpu', dtype=torch.float32):
         """
         A sampler for generating bimatrix games G = (A, B).
-
+        
         Args:
             n_actions (int): number of actions per player (>1)
             payoffs_space (str): space of payoff (sphere, preferences, strategic)
+            warp (bool): if True, apply a logarithmic warp to the sphere sampling
             game_class (str): type of game (general sum, zero sum, symmetric)
             set_games (torch.Tensor, optional): optional predefined set of games 
             normal_vectors (tuple[torch.Tensor or None, torch.Tensor or None], optional): 
@@ -20,6 +21,7 @@ class BimatrixSampler:
         self.n_actions = n_actions  
         self.game_class = game_class
         self.payoffs_space = payoffs_space
+        self.warp = warp
         self.set_games = set_games
         self.normal_vectors = normal_vectors
         self.device = device
@@ -33,6 +35,11 @@ class BimatrixSampler:
         self.v_norm_A, self.v_norm_B = self.generate_normal_vectors(self.normal_vectors)
         # generate basis for mean-0, norm-n space orthogonal to column-0, norm-n space
         self.c_orth = self.generate_basis()
+        
+        # compose rand_sphere with log_warp if warp is True
+        if self.warp == True:
+            rand_sphere_ = self.rand_sphere
+            self.rand_sphere = lambda k, n, r: self.log_warp(rand_sphere_(k, n, r), n, r)
         
         # define matrix sampling function based on payoffs_space (samples A)
         if self.payoffs_space == 'sphere':
@@ -115,6 +122,14 @@ class BimatrixSampler:
         norm = torch.norm(x, dim=1, keepdim=True).clamp_min(1e-8)
         x.div_(norm).mul_(r)
         # x is uniform in {x \in R^{n} | ||x||=r}
+        return x
+    
+    def log_warp(self, x, n, r):
+        # apply logarithmic warp to each coordinate: x_i -> sign(x_i) * log(1 + |x_i|)
+        x = x.sign() * torch.log1p(n**(1/2)*x.abs())
+        # re-normalize to ensure x lies on the sphere of radius r
+        norm = torch.norm(x, dim=1, keepdim=True).clamp_min(1e-8)
+        x.div_(norm).mul_(r)
         return x
     
     def rand_preferences_sphere(self, k, n, r):
