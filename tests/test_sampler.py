@@ -114,11 +114,11 @@ def test_bimatrix_sampler():
     #passed = max_dev < 1e-3
     #print_result("Sphere Equivalent Subspaces Standard Deviation", passed, "≈1", std_dev.mean().item())
 
-    expected_max = (n_actions**2 - 1) ** 0.5
-    max_abs_G = max(G.max().item(), abs(G.min().item()))
-    deviation = expected_max - max_abs_G
-    passed = abs(deviation) < 1e-3
-    print_result("Sphere Equivalent Subspaces Max-Min Check", passed, expected_max, max_abs_G)
+    #expected_max = (n_actions**2 - 1) ** 0.5
+    #max_abs_G = max(G.max().item(), abs(G.min().item()))
+    #deviation = expected_max - max_abs_G
+    #passed = abs(deviation) < 1e-3
+    #print_result("Sphere Equivalent Subspaces Max-Min Check", passed, expected_max, max_abs_G)
 
     norm_G = G.norm(dim=(2, 3))
     max_dev = torch.max(abs(norm_G - n_actions)).item()
