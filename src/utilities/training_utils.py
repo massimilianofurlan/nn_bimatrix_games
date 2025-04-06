@@ -59,7 +59,7 @@ def train(model1: torch.nn.Module, optimizer1: Optimizer, scheduler1: _LRSchedul
     log_interval = n_optimization_steps // 128    
 
     device = rand_bimatrix.device
-    avg_regrets = torch.zeros((n_optimization_steps, 2), device=device)
+    avg_regrets = torch.zeros((n_optimization_steps, 2), requires_grad=False, device=device)
 
     log_models = bool(timestamp)
     if log_models:
@@ -100,6 +100,6 @@ def train(model1: torch.nn.Module, optimizer1: Optimizer, scheduler1: _LRSchedul
             print_epoch_stats(step, log_interval, batch_size, avg_regrets, model1, optimizer1, start_time)
             start_time = time.time()
 
-    avg_regrets = avg_regrets.cpu().half().numpy()
+    avg_regrets = avg_regrets.detach().cpu().half().numpy()
     return model1, model2, avg_regrets
 
