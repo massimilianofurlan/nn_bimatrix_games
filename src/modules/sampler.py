@@ -118,7 +118,7 @@ class BimatrixSampler:
     
     def rand_sphere(self, k, n, r):
         # sample uniformly k points from r-radius sphere in R^{n}
-        x = torch.randn((k, n), device=self.device, dtype=self.dtype, requires_grad=False)
+        x = torch.empty((k, n), device=self.device, dtype=self.dtype).normal_()
         norm = torch.norm(x, dim=1, keepdim=True).clamp_min(1e-8)
         x.div_(norm).mul_(r)
         # x is uniform in {x \in R^{n} | ||x||=r}

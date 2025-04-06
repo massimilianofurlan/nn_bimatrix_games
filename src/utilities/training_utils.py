@@ -10,8 +10,9 @@ from src.utilities.model_utils import save_model
 
 def transpose_game(G):
     # input G=(A,B) outputs G'=(B',A')
-    A, B = G[:,0,:,:], G[:,1,:,:]
-    G_transpose = torch.stack((B.transpose(1, 2), A.transpose(1, 2)), dim=1)
+    A_transpose = G[:,0].transpose(1, 2)
+    B_transpose = G[:,1].transpose(1, 2)
+    G_transpose = torch.stack((B_transpose, A_transpose), dim=1)
     return G_transpose
 
 def optimize_model(optimizer, loss):
@@ -19,17 +20,15 @@ def optimize_model(optimizer, loss):
     loss.backward()
     optimizer.step()
    
-
 def grad_norm(model: torch.nn.Module) -> float:
     """ compute the L2 norm of the accumulated gradients. """
     total_norm = sum(x.grad.data.norm(2) ** 2 for x in model.parameters() if x.grad is not None)**(1/2)
-    return total_norm#.item()
-
+    return total_norm.item()
 
 def print_epoch_stats(step: int, log_interval: int, batch_size: int, avg_regrets: float, model: torch.nn.Module, 
                       optimizer: Optimizer, start_time: float) -> None:
     """ print statistics for the current epoch. """
-    avg_regret = avg_regrets[step+1-log_interval:step+1,:].mean()
+    avg_regret = avg_regrets[step+1-log_interval:step+1,:].mean().item()
     avg_grad_norm = grad_norm(model)
     log_step = (step+1) // log_interval
     games_processed = (step+1) * batch_size
@@ -59,7 +58,8 @@ def train(model1: torch.nn.Module, optimizer1: Optimizer, scheduler1: _LRSchedul
     n_optimization_steps = n_games // batch_size
     log_interval = n_optimization_steps // 128    
 
-    avg_regrets = np.empty((n_optimization_steps,2), dtype=np.float32)
+    device = rand_bimatrix.device
+    avg_regrets = torch.zeros((n_optimization_steps, 2), device=device)
 
     log_models = bool(timestamp)
     if log_models:
@@ -89,8 +89,8 @@ def train(model1: torch.nn.Module, optimizer1: Optimizer, scheduler1: _LRSchedul
         scheduler1.step()
         scheduler2.step()
 
-        avg_regrets[step,0] = regret1.mean().item()
-        avg_regrets[step,1] = regret2.mean().item()
+        avg_regrets[step,0] = regret1.mean()
+        avg_regrets[step,1] = regret2.mean()
         
         if log_models and step in model_log_steps: 
             save_model(model1, models_log_path, file_name=f'model1_{step:.0f}.pth')
@@ -100,6 +100,6 @@ def train(model1: torch.nn.Module, optimizer1: Optimizer, scheduler1: _LRSchedul
             print_epoch_stats(step, log_interval, batch_size, avg_regrets, model1, optimizer1, start_time)
             start_time = time.time()
 
-    avg_regrets = np.array(avg_regrets, dtype=np.float16)
+    avg_regrets = avg_regrets.cpu().half().numpy()
     return model1, model2, avg_regrets
 
