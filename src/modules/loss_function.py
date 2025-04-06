@@ -71,4 +71,4 @@ class Loss:
             regret_values_ex_post = self.regret(G, x, y_ex_post)
             loss_values = (regret_values_ex_post ** self.p).mean()
         # return regret values and mean loss value over the batch
-        return regret_values, loss_values.mean()
+        return regret_values.detach(), loss_values.mean()
