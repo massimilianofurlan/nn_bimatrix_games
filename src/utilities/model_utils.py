@@ -19,7 +19,7 @@ def initialize_model(config, device):
     model.n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     config['device'] = str(model.device)
     config['n_params'] = model.n_params
-    return model
+    return torch.jit.script(model)
 
 def initialize_optimizer(model, optim_algorithm, lr):
     # initialize and return the optimizer
