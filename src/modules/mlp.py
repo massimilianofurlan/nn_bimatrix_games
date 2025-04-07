@@ -34,13 +34,12 @@ class MLP_Bimatrix(nn.Module):
         self.n_actions = n_actions
         
         modules = []
-        # preprocessing
-        modules.append(nn.Flatten())
         # input layer
+        modules.append(nn.Flatten())
+        # hidden layers
         modules.append(nn.Linear(2*n_actions**2, hidden_dim))
         modules.append(nn.ReLU(inplace=True))
-        # hidden layers
-        for _ in range(n_layers):
+        for _ in range(n_layers-1):
             modules.append(nn.Linear(hidden_dim, hidden_dim))
             modules.append(nn.ReLU(inplace=True))
         # output layer
