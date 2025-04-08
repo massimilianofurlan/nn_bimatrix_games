@@ -12,97 +12,45 @@ def set_size(width, fraction=1, subplots=(1, 1)):
     fig_height_in = fig_width_in * golden_ratio * (subplots[0] / subplots[1])
     return (fig_width_in, fig_height_in)
 
-def plot_training_loss(avg_regrets, base_dir, window_size=128, file_name="moving_average_plot.pdf", 
-                       xlabel='Step', ylabel='Moving Average of Max Regret', title=None,
-                       exp_fit_range=[140, 200], power_fit_range=[200, None]):
-    """
-    Plots the moving average of the maximum values along axis=1 of the avg_regrets array,
-    including exponential and power-law fits with confidence intervals.
-    
-    Args:
-        avg_regrets: Array of average regrets with shape (n, 2).
-        window_size: The size of the window for computing the moving average.
-        base_dir: Directory to save the plot.
-        file_name: Name of the file to save the plot as.
-        xlabel: Label for the x-axis.
-        ylabel: Label for the y-axis.
-        title: Title of the plot.
-        exp_fit_range: Range (as [min, max]) for the exponential fit.
-        power_fit_range: Range (as [min, max]) for the power-law fit (use None for max to fit until end).
-    """
-    
-    # Compute the maximum along axis=1
-    max_regrets = np.max(avg_regrets, axis=1)
-    #idxs = np.arange(len(max_regrets))
-    
-    # Compute the moving average
-    #moving_avg = np.convolve(max_regrets, np.ones(window_size)/window_size, mode='valid')
-    
-    # undersanple
-    idxs = np.logspace(np.log10(1), np.log10(len(max_regrets)), num=256, dtype=int, endpoint=True)-1
-    max_regrets = max_regrets[idxs]
-    
-    # Plot the moving average
-    fig_width, fig_height = set_size(452.9679, fraction=0.5)  # Adjust 'fraction' as needed
-    plt.figure(figsize=(fig_width, fig_height))
-    
+def set_style(plt):
+    """Sets matplotlib rcParams"""
     plt.rcParams.update({
         "text.usetex": True,
         "font.family": "serif",
-        "axes.labelsize": 11,
-        "font.size": 11,
-        "legend.fontsize": 9,
-        "xtick.labelsize": 9,
-        "ytick.labelsize": 9,
+        "axes.labelsize": 11,       # Match document font size
+        "font.size": 11,            # Match document font size
+        "legend.fontsize": 9,       # Slightly smaller than the main text
+        "xtick.labelsize": 9,       # Slightly smaller than the main text
+        "ytick.labelsize": 9,       # Slightly smaller than the main text
         "legend.fancybox": False,
         "legend.framealpha": 1.0,
         "legend.edgecolor": 'black',
         'axes.linewidth': 0.5
     })
+
+def plot_total_regret(avg_regrets, base_dir, file_name="learning_curve.pdf", 
+                      xlabel='Log Interval', ylabel='Total Regret'):
+    """
+    Plots sum of regrets during training (mean over 128 intervals)
+    """
+    
+    # Compute the maximum along axis=1
+    max_regrets = np.sum(avg_regrets, axis=1)
+    idxs = np.arange(1, len(max_regrets)+1)
+    
+    # Plot the moving average
+    fig_width, fig_height = set_size(452.9679, fraction=0.5)  # Adjust 'fraction' as needed
+    plt.figure(figsize=(fig_width, fig_height))
+    set_style(plt)
     
     plt.plot(idxs, max_regrets, color='blue', linewidth=1.25)
-    plt.xscale('log', base=10)
-    
+
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.grid(visible=True, color='grey', linestyle='-', linewidth=0.25, alpha=0.2)
-    
-    if title:
-        plt.title(title, fontsize=11)
         
     plot_file_name = os.path.join(base_dir, file_name)
     plt.savefig(plot_file_name, format='pdf', bbox_inches='tight')
-    plt.close()
-
-def plot_histogram(data, base_dir, xlim=(0, 0.1), bins=50, file_name="histogram.png", xlabel='Values', ylabel='Frequency', title='Histogram of Values', color='blue'):
-    """
-    Plot a histogram of the data.
-
-    Args:
-        data (np.array): Array containing data values.
-        base_dir (str): Base directory to save the plot file.
-        xlim (tuple): Tuple containing lower and upper bounds of x-axis (default: (0, 0.1)).
-        bins (int): Number of bins in the histogram (default: 50).
-        file_name (str): Name of the plot file (default: "histogram.png").
-        xlabel (str): Label for the x-axis (default: 'Values').
-        ylabel (str): Label for the y-axis (default: 'Frequency').
-        title (str): Title of the plot (default: 'Histogram of Values').
-        color (str): Color of the histogram bars (default: 'blue').
-    """
-    plot_file_name = os.path.join(base_dir, file_name)
-
-    # Plot the histogram
-    plt.figure(figsize=(8, 6))
-    xlim=(0, np.quantile(data,0.95))
-    plt.hist(data, bins=bins, range=xlim, edgecolor='black', color=color)
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.grid(True)
-    plt.xlim(xlim)
-
-    # Save the plot to a file
-    plt.savefig(plot_file_name)
     plt.close()
 
 
@@ -134,21 +82,7 @@ def plot_cdfs(data1, data2, base_dir, file_name="figure.pdf", xlabel='', ylabel=
     # Set figure size using LaTeX text width
     fig_width, fig_height = set_size(452.9679, fraction=0.5)
     plt.figure(figsize=(fig_width, fig_height))
-
-    # Use LaTeX for text rendering
-    plt.rcParams.update({
-        "text.usetex": True,
-        "font.family": "serif",
-        "axes.labelsize": 11,       # Match document font size
-        "font.size": 11,            # Match document font size
-        "legend.fontsize": 9,       # Slightly smaller than the main text
-        "xtick.labelsize": 9,       # Slightly smaller than the main text
-        "ytick.labelsize": 9,       # Slightly smaller than the main text
-        "legend.fancybox": False,
-        "legend.framealpha": 1.0,
-        "legend.edgecolor": 'black',
-        'axes.linewidth': 0.5
-    })
+    set_style(plt)
 
     # Plot the CDFs for both datasets
     plt.step(sorted_data1, cdf1, where='post', color='red', linewidth=1.5, label=label1)
@@ -224,21 +158,7 @@ def plot_learning_curves(max_regret, statistics, model_log_steps, base_dir,
     # Set figure size using LaTeX text width
     fig_width, fig_height = set_size(452.9679, fraction=0.5)
     plt.figure(figsize=(fig_width, fig_height))
-    
-    # Use LaTeX for text rendering
-    plt.rcParams.update({
-        "text.usetex": True,
-        "font.family": "serif",
-        "axes.labelsize": 11,       # Match document font size
-        "font.size": 11,            # Match document font size
-        "legend.fontsize": 9,       # Slightly smaller than the main text
-        "xtick.labelsize": 9,       # Slightly smaller than the main text
-        "ytick.labelsize": 9,       # Slightly smaller than the main text
-        "legend.fancybox": False,
-        "legend.framealpha": 1.0,
-        "legend.edgecolor": 'black',
-        'axes.linewidth': 0.5
-    })
+    set_style(plt)
         
     # Plot the data
     labels = legend_labels if legend_labels else [r'$>0$ PURE', r'$0$ PURE', 'ALL GAMES']

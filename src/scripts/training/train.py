@@ -4,7 +4,7 @@ import os
 from src.utilities.io_utils import clear, read_config, print_metadata, save_to_pickle, process_config, save_metadata
 from src.utilities.model_utils import (save_model, initialize_model, initialize_optimizer, 
                                         initialize_scheduler, generate_metadata, initialize_weigths)
-from src.utilities.viz_utils import plot_training_loss
+from src.utilities.viz_utils import plot_total_regret
 from src.utilities.data_utils import load_dataset
 from src.utilities.training_utils import train
 from src.modules.loss_function import Loss
@@ -50,7 +50,6 @@ def main():
     
     # Bimatrix sampler
     rand_bimatrix = BimatrixSampler(**config['bimatrix'], set_games = training_set, device=device)
-    #rand_bimatrix = BimatrixSampler(supp1=[torch.pi/2,torch.pi], supp2=[3/2*torch.pi,2*torch.pi], strategic=False, device=device)
 
     # Generate metadata
     metadata, timestamp = generate_metadata(config, args)
@@ -74,9 +73,7 @@ def main():
     save_to_pickle(avg_regrets, os.path.join(model_path, filename))
 
     # Plot training loss
-    n_actions = config['n_actions']
-    plot_training_loss(avg_regrets, model_path, file_name="learning_curve.pdf", xlabel='Step', ylabel='MaxReg', 
-                       title=rf'$\mathbf{{{n_actions}}} \times \mathbf{{{n_actions}}}$ Games')
+    plot_total_regret(avg_regrets, model_path)
 
 if __name__ == "__main__":
     clear()
