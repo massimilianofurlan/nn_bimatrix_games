@@ -10,23 +10,9 @@ class Loss:
         """
         self.ex_ante = ex_ante
         self.p = p
-
-    #@staticmethod
-    #def inplace_normalize(G: torch.Tensor) -> torch.Tensor:
-    #    """ Normalize the payoff matrix. """
-    #    # Demean payoffs x <- x - mean(x)
-    #    G.sub_(torch.mean(G, dim=(1, 2), keepdim=True))
-    #    # Normalize payoffs into unit sphere x <- x / norm(x)
-    #    norm = torch.linalg.matrix_norm(G, dim=(1, 2), keepdim=True)
-    #    norm = norm.where(norm > 0, torch.tensor(1.0, device=norm.device))
-    #    G.div_(norm)
-    #    # Unit variance (sphere of radius n_actions) x <- x * n_actions
-    #    n_actions = G.size(1)
-    #    G.mul_(n_actions)
-    #    return G
-
+    
     @staticmethod
-    def regret(G: torch.Tensor, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def regret(G: torch.Tensor, x: torch.Tensor, y: torch.Tensor, grad=True) -> torch.Tensor:
         """
         calculate the regret of the row player with payoff matrix A from playing x against y.
         Args:
@@ -46,6 +32,7 @@ class Loss:
         Ay_max = Ay.max(dim=1).values  # shape: batch_size
         #Ay_max = ((Ay/1e-10).softmax(1) * Ay).sum(dim=1) 
         # regret max_i [Ay]_i - x'Ay 
+        #grad = -regret.unsqueeze(1)*Ay/G.size(0) if compute_gradient else None
         return Ay_max - xAy  # shape: batch_size
 
     def __call__(self, G: torch.Tensor, x: torch.Tensor, y: torch.Tensor) -> (torch.Tensor, torch.Tensor):
@@ -64,11 +51,11 @@ class Loss:
         regret_values = self.regret(G, x, y)
         # compute loss 
         if self.ex_ante:
-            loss_values = (regret_values ** self.p).mean()
+            loss_values = regret_values.pow(self.p).mean()
         else:
             # sample opponent's strategy
             y_ex_post = torch.zeros_like(y).scatter_(1, torch.multinomial(y, 1), 1.0)
             regret_values_ex_post = self.regret(G, x, y_ex_post)
-            loss_values = (regret_values_ex_post ** self.p).mean()
+            loss_values = regret_values_ex_post.pow(self.p).mean()
         # return regret values and mean loss value over the batch
         return regret_values.detach(), loss_values.mean()
