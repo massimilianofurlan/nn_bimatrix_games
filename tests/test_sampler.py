@@ -125,7 +125,6 @@ def test_bimatrix_sampler():
     passed = max_dev < 1e-5
     print_result("Sphere Equivalent Subspaces Norm Check", passed, n_actions, norm_G.mean().item())
 
-    sampler = BimatrixSampler(n_actions=n_actions, payoffs_space="sphere_equivalent", device='cpu')
     n_tests = 128
     n_games = 32
     n_passed = 0
