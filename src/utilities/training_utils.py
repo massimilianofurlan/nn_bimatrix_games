@@ -19,7 +19,7 @@ def optimize_model(optimizer, loss):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-   
+
 def grad_norm(model: torch.nn.Module) -> float:
     """ compute the L2 norm of the accumulated gradients. """
     total_norm = sum(x.grad.data.norm(2) ** 2 for x in model.parameters() if x.grad is not None)**(1/2)
@@ -95,8 +95,8 @@ def train(model1: torch.nn.Module, optimizer1: Optimizer, scheduler1: _LRSchedul
         regret_accum[1] += regret2.mean()
         
         if log_models and step in model_log_steps: 
-            save_model(model1, models_log_path, file_name=f'model1_{step:.0f}.pth')
-            save_model(model2, models_log_path, file_name=f'model2_{step:.0f}.pth')
+            save_model(model1, models_log_path, file_name=f'model1_{step:.0f}')
+            save_model(model2, models_log_path, file_name=f'model2_{step:.0f}')
 
         if (step+1) % log_interval == 0:
             avg_regret_interval = regret_accum / log_interval
