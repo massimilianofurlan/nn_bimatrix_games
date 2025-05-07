@@ -112,15 +112,6 @@ def evaluate(model1: torch.nn.Module, model2: torch.nn.Module, testing_set: np.n
             p = model1(G)
             q = model2(G_transpose)
             
-            # sample from uniform distribution on n_actions-simplex: x/|x| with x~Exp(1)
-            #p = -torch.log(torch.rand((batch_size,n_actions), dtype=torch.float32, device='mps'))
-            #p /= p.sum(axis=1, keepdim=True)
-            #q = -torch.log(torch.rand((batch_size,n_actions), dtype=torch.float32, device='mps'))
-            #q /= q.sum(axis=1, keepdim=True)
-            # constant uniform
-            #p = torch.ones((batch_size,n_actions), dtype=torch.float32, device='mps')/n_actions
-            #q = torch.ones((batch_size,n_actions), dtype=torch.float32, device='mps')/n_actions
-            
             # compute regrets
             regret_profile[start_index:end_index, 0] = Loss.regret(G, p, q)             / (G[:,0,:,:].amax(dim=(1,2)) - G[:,0,:,:].amin(dim=(1,2)))
             regret_profile[start_index:end_index, 1] = Loss.regret(G_transpose, q, p)   / (G[:,1,:,:].amax(dim=(1,2)) - G[:,1,:,:].amin(dim=(1,2)))
