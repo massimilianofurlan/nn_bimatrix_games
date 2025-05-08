@@ -101,13 +101,12 @@ def create_comparison_table(is_mask1, is_mask2, label1, label2, f):
 
 f = open(eval_file, 'a')
 
-# Example usage
-gamma_threshold = 0.1
+gamma_threshold = 1
 multiple_nash_mask = statistics['n_nash'] > 1
 is_gamma_nash = gamma_distance_nash < gamma_threshold
 
 mask = multiple_nash_mask & is_gamma_nash
-print_and_log(f"Multiple Equilibria and 0.1-Nash (applies also to all others) {np.sum(mask)}", f)
+print_and_log(f"Multiple Equilibria and {gamma_threshold}-Nash (applies also to all others) {np.sum(mask)}", f)
 create_comparison_table(closest_nash_is_harsanyiselten[mask], closest_nash_is_utilitarian[mask], 
                         "Harsanyi-Selten", "Utilitarian", f)
 
