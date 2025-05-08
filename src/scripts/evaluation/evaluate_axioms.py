@@ -73,10 +73,16 @@ n_games, n_players, n_actions, _ = games.size()
 batch_size = 2**14
 quantiles = torch.tensor([0.25, 0.5, 0.75, 0.90, 0.95, 0.99], device=device)
 
-harsanyi_selten_mask = labels['harsanyi_selten_mask']
-harsanyi_selten_traces = labels['harsanyi_selten_traces']
-unique_nash_mask = statistics['n_nash'] == 0
+############################# MASKING ###############################
+#####################################################################
+
 multiple_nash_mask = statistics['n_nash'] > 1
+games = games[multiple_nash_mask]
+n_games, n_players, n_actions, _ = games.size()
+statistics = {k: v[multiple_nash_mask] for k, v in statistics.items()}
+labels = {k: [v[i] for i in np.where(multiple_nash_mask)[0]] for k, v in labels.items()}
+evaluation_output = {k: v[multiple_nash_mask] for k, v in evaluation_output.items()}
+
 
 print('\nTesting model...')
 
@@ -176,7 +182,7 @@ def get_rand_equivalent_game(game_batch, n_transf, device = 'cpu'):
     # sample uniformlly from the sapce of games that are best reply equivalent to (A,B)
     batch_size, n_players, n_actions, _ = game_batch.shape
     # initialize rotation matrices and rotation direction
-    rand_bimatrix = BimatrixSampler(n_actions=2, device=device)
+    rand_bimatrix = BimatrixSampler(n_actions=n_actions, device=device)
     Hpr, c_orth = rand_bimatrix.Hpr, rand_bimatrix.c_orth
     # extract games
     A, B = game_batch[:,0,:,:], game_batch[:,1,:,:]
@@ -256,7 +262,8 @@ closest_nash_mask = np.einsum('ij,ik->ijk', closest_nash[:,0,:], closest_nash[:,
 closest_nash_mask = torch.tensor(closest_nash_mask, device=device)
 
 closest_nash_is_pure = np.array([pure_nash_mask[i][closest_nash_idx[i]] for i in range(n_games)])
-is_gamma_nash = closest_nash_distance < 0.05
+gamma = 1
+is_gamma_nash = closest_nash_distance <= gamma
 is_pure_and_gamma_nash = is_gamma_nash & closest_nash_is_pure
 
 games_ = games[is_pure_and_gamma_nash]
@@ -302,24 +309,24 @@ def quantiles_string(arr, quants = quantiles.cpu().numpy()):
 f = open(eval_file, 'a')
 
 print()
-print_and_log('PERMUTATIONS',f)
-print_and_log(f'Average Distance: {permutation_avg_avg_distance:.3f} ({permutation_std_avg_distance:.3f})', f)
-print_and_log(f'Quantiles [0.25, 0.5, 0.75, 0.90, 0.95, 0.99]: {quantiles_string(permutation_quantiles_avg_distance)}', f)
-print_and_log('', f)
 
-print_and_log('SYMMETRY',f)
+print_and_log(f'SYMMETRY [{n_games}]',f)
 print_and_log(f'Average Distance: {symmetry_avg_distance:.3f} ({symmetry_std_distance:.3f})', f)
 print_and_log(f'Quantiles [0.25, 0.5, 0.75, 0.90, 0.95, 0.99]: {quantiles_string(symmetry_quantiles_distance)}', f)
 print_and_log('', f)
 
+print_and_log(f'PERMUTATIONS [{n_games}]',f)
+print_and_log(f'Average Distance: {permutation_avg_avg_distance:.3f} ({permutation_std_avg_distance:.3f})', f)
+print_and_log(f'Quantiles [0.25, 0.5, 0.75, 0.90, 0.95, 0.99]: {quantiles_string(permutation_quantiles_avg_distance)}', f)
+print_and_log('', f)
 
-print_and_log('AFFINE BEST REPLY PRESERVING TRANSFORMATIONS',f)
+print_and_log(f'BEST REPLY PRESERVING TRANSFORMATIONS [{n_games}]',f)
 print_and_log(f'Average Distance: {affine_bestreply_avg_avg_distance:.3f} ({affine_bestreply_std_avg_distance:.3f})', f)
 print_and_log(f'Quantiles [0.25, 0.5, 0.75, 0.90, 0.95, 0.99]: {quantiles_string(affine_bestreply_quantiles_avg_distance)}', f)
 print_and_log('', f)
 
-print_and_log('MONOTONICITY',f)
-print_and_log(f'Average Distance (0.05-Pure Nash): {monotonicity_avg_avg_distance:.3f} ({monotonicity_std_avg_distance:.3f})', f)
+print_and_log(f'MONOTONICITY [{n_games_}]',f)
+print_and_log(f'Average Distance ({gamma}-Pure Nash): {monotonicity_avg_avg_distance:.3f} ({monotonicity_std_avg_distance:.3f})', f)
 print_and_log(f'Quantiles [0.25, 0.5, 0.75, 0.90, 0.95, 0.99]: {quantiles_string(monotonicity_quantiles_avg_distance)}', f)
 
 
@@ -328,6 +335,8 @@ print_and_log(f'Quantiles [0.25, 0.5, 0.75, 0.90, 0.95, 0.99]: {quantiles_string
 #####################################################################
 
 print('\nTest 4/4 - Unanimity  ...')
+
+harsanyi_selten_mask = labels['harsanyi_selten_mask']
 
 argmax_profiles = games == torch.amax(games, dim=(2,3), keepdim=True)
 joint_argmax_profile = argmax_profiles.prod(dim=1)

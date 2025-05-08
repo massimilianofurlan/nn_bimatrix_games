@@ -44,11 +44,11 @@ def plot_total_regret(avg_regrets, base_dir, file_name="learning_curve.pdf",
     set_style(plt)
     
     plt.plot(idxs, max_regrets, color='blue', linewidth=1.25)
-
+    
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.grid(visible=True, color='grey', linestyle='-', linewidth=0.25, alpha=0.2)
-        
+    
     plot_file_name = os.path.join(base_dir, file_name)
     plt.savefig(plot_file_name, format='pdf', bbox_inches='tight')
     plt.close()
@@ -58,39 +58,39 @@ def plot_cdfs(data1, data2, base_dir, file_name="figure.pdf", xlabel='', ylabel=
               label1='', label2='', ylim_left = 0, title = ''):
     loss_data1 = data1.astype(np.float64)
     loss_data2 = data2.astype(np.float64)
-
+    
     if data1.size == 0 or data2.size == 0:
         return
-
+    
     # Sort the loss data and compute the CDFs
     sorted_data1 = np.sort(loss_data1)
     cdf1 = np.arange(1, len(sorted_data1) + 1) / len(sorted_data1)
     sorted_data2 = np.sort(loss_data2)
     cdf2 = np.arange(1, len(sorted_data2) + 1) / len(sorted_data2)
-
+    
     # Find the values corresponding to the 99.3th percentile for both datasets
     xlim_right = max(np.percentile(loss_data1, 99.3), np.percentile(loss_data2, 99.3))
-
+    
     # Find the values corresponding to the 99th percentile for both datasets
     value_99_data1 = np.percentile(loss_data1, 99)
     value_99_data2 = np.percentile(loss_data2, 99)
-
+    
     # Find the corresponding CDF values
     cdf_99_data1 = np.interp(value_99_data1, sorted_data1, cdf1)
     cdf_99_data2 = np.interp(value_99_data2, sorted_data2, cdf2)
-
+    
     # Set figure size using LaTeX text width
     fig_width, fig_height = set_size(452.9679, fraction=0.5)
     plt.figure(figsize=(fig_width, fig_height))
     set_style(plt)
-
+    
     # Plot the CDFs for both datasets
     plt.step(sorted_data1, cdf1, where='post', color='red', linewidth=1.5, label=label1)
     plt.plot(value_99_data1, cdf_99_data1, 'ro', markersize=3)
-
+    
     plt.step(sorted_data2, cdf2, where='post', color='blue', linewidth=1.5, label=label2)
     plt.plot(value_99_data2, cdf_99_data2, 'bo', markersize=3)
-
+    
     plt.tick_params(direction="in", color='grey', width=0.25)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -113,17 +113,6 @@ def plot_learning_curves(max_regret, statistics, model_log_steps, base_dir,
                          title=None, legend_labels=None, confidence = 0.9):
     """
     Plots average regrets with options for customization of labels, title, legend, and confidence intervals.
-
-    Args:
-        max_regret: Array of max_regret.
-        statistics: Dictionary containing statistical information.
-        model_log_steps: Array of log-scaled steps.
-        base_dir: Directory to save the plot.
-        file_name: Name of the file to save the plot as.
-        xlabel: Label for the x-axis.
-        ylabel: Label for the y-axis.
-        title: Title of the plot.
-        legend_labels: List of labels for the legend.
     """
     
     # Compute masks and averages
@@ -135,7 +124,7 @@ def plot_learning_curves(max_regret, statistics, model_log_steps, base_dir,
     some_pure_avg_regrets = max_regret[:, some_pure_nash_mask].mean(axis=1)
     
     # Apply mask for steps greater than or equal to 100
-    mask = model_log_steps >= 100
+    mask = model_log_steps >= 50
     idxs = model_log_steps[mask]
     avg_regrets = avg_regrets[mask]
     zero_pure_avg_regrets = zero_pure_avg_regrets[mask]
@@ -192,3 +181,81 @@ def plot_learning_curves(max_regret, statistics, model_log_steps, base_dir,
     plot_file_name = os.path.join(figures_dir, file_name)
     plt.savefig(plot_file_name, format='pdf', bbox_inches='tight')
     plt.close()
+
+def plot_learning_curve_fit(regret_profiles, model_log_steps, base_dir, file_name="learning_curve_fit.pdf", 
+                            xlabel='Step', ylabel='MaxReg', title=None,   
+                            exp_fit_range=[150, 180], power_fit_range=[180, None]):
+    """
+    Plots average max regret across games and fits exponential and power-law decay curves.
+    """
+    
+    # Compute average max regret across games
+    avg_max_regret = regret_profiles.max(axis=2).mean(axis=1)
+    
+    # Truncate early steps
+    mask = model_log_steps >= 50
+    model_log_steps = model_log_steps[mask]
+    avg_max_regret = avg_max_regret[mask]
+    
+    # Set figure size and style
+    fig_width, fig_height = set_size(452.9679, fraction=0.50)
+    plt.figure(figsize=(fig_width, fig_height))
+    set_style(plt)
+    
+    # Plot learning curve
+    plt.plot(model_log_steps, avg_max_regret, color='blue', linewidth=1.25)
+    plt.xscale('log', base=10)
+    
+    A_exp = b_exp = A_power = b_power = None
+    
+    # === Exponential Fit ===
+    exp_mask = (model_log_steps >= exp_fit_range[0]) & (model_log_steps <= exp_fit_range[1])
+    exp_x = model_log_steps[exp_mask]
+    exp_y = avg_max_regret[exp_mask]
+    if len(exp_x) > 0:
+        def exp_decay(x, A, b):
+            return A * np.exp(-b * x)
+        popt_exp, _ = curve_fit(exp_decay, exp_x, exp_y, p0=(exp_y[0], 0.01))
+        A_exp, b_exp = popt_exp
+        y_fit_exp = exp_decay(exp_x, A_exp, b_exp)
+        plt.plot(exp_x, y_fit_exp, linestyle='--', color='limegreen', linewidth=0.75)
+    
+    # === Power-Law Fit ===
+    max_x = power_fit_range[1] if power_fit_range[1] is not None else model_log_steps[-1]
+    power_mask = (model_log_steps >= power_fit_range[0]) & (model_log_steps <= max_x)
+    power_x = model_log_steps[power_mask]
+    power_y = avg_max_regret[power_mask]
+    if len(power_x) > 0:
+        def power_law(x, A, b):
+            return A * x**b
+        popt_power, _ = curve_fit(power_law, power_x, power_y)
+        A_power, b_power = popt_power
+        y_fit_power = power_law(power_x, A_power, b_power)
+        plt.plot(power_x, y_fit_power, linestyle='--', color='red', linewidth=0.75)
+    
+    # Final styling
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    if title:
+        plt.title(title, fontsize=11)
+    plt.grid(visible=True, color='grey', linestyle='-', linewidth=0.25, alpha=0.2)
+    
+    # Save plot
+    figures_dir = os.path.join(base_dir, 'figures')
+    os.makedirs(figures_dir, exist_ok=True)
+    plot_file_path = os.path.join(figures_dir, file_name)
+    plt.savefig(plot_file_path, format='pdf', bbox_inches='tight')
+    plt.close()
+    
+    # Save fit details to .txt
+    fit_txt_file = os.path.splitext(file_name)[0] + '.txt'
+    fit_txt_path = os.path.join(figures_dir, fit_txt_file)
+    with open(fit_txt_path, 'w') as f:
+        f.write(f"# Exponential Fit: A * exp(-b * x)\n")
+        f.write(f"A = {A_exp:.6f}\n")
+        f.write(f"b = {b_exp:.6f}\n")
+        f.write("\n")
+        f.write(f"# Power Law Fit: A * x^b\n")
+        f.write(f"A = {A_power:.6f}\n")
+        f.write(f"b = {b_power:.6f}\n")
+
