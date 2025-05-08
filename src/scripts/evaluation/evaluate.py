@@ -7,7 +7,7 @@ from src.utilities.model_utils import select_models
 from src.utilities.data_utils import select_dataset, load_labels, load_statistics
 from src.utilities.eval_utils import evaluate
 from src.utilities.viz_utils import plot_cdfs
-from src.utilities.io_utils import print_metadata, preview_dataset, log_metadata, save_to_pickle, print_and_log
+from src.utilities.io_utils import print_metadata, preview_dataset, log_metadata, save_to_pickle, load_from_pickle, print_and_log
 
 gamma = 0.025
 
@@ -29,7 +29,7 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     (strategy_profiles, regret_profile, expected_payoff_profile, mass_on_dominated, 
     mass_on_eliminated, gamma_distance_nash, closest_nash_idx, 
     closest_nash_is_pareto, closest_nash_is_utilitarian,
-    closest_nash_is_harsanyi_selten, closest_nash_index) = evaluation_output.values()
+    closest_nash_is_harsanyi_selten, closest_nash_index, dist_from_default) = evaluation_output.values()
     # unpacking input data (game statistics)
     (n_nash, n_pure_nash, n_dominated, n_rationalizable, 
     n_pareto_optimal, n_utilitarian, n_payoff_dominant, n_harsanyi_selten,
@@ -46,6 +46,7 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     closest_nash_is_utilitarian = closest_nash_is_utilitarian[mask]
     closest_nash_is_harsanyi_selten = closest_nash_is_harsanyi_selten[mask]
     closest_nash_index = closest_nash_index[mask]
+    dist_from_default = dist_from_default[mask]
     # masking input data (statistics)
     n_nash = n_nash[mask] 
     n_pure_nash = n_pure_nash[mask] 
@@ -156,6 +157,12 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     freq_closest_nash_idx_is_zero = np.mean(closest_nash_index == 0)
     freq_closest_nash_idx_is_plus = np.mean(closest_nash_index == 1)
     
+    ################ DISTANCE FROM DEFAULT ################
+    
+    avg_dist_from_default = np.mean(dist_from_default)
+    std_dist_from_default = np.std(dist_from_default)
+    dist_from_default_quant = quantiles(dist_from_default)
+    
     #n_play_mixed = np.any(np.logical_and(strategy_profiles < 0.9, strategy_profiles > 0.1),axis=(1,2)).sum()
     #print(f"Freq. Play Mixed: {n_play_mixed/n_games}")
     ############### OUTPUT TO TERMINAL ################
@@ -210,7 +217,10 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     print_and_log(f'Freq. Closest Nash is Utilitarian & Not Harsanyi-Selten: {freq_closest_nash_is_utilitarian_not_harsayani_selten:.3f}', f)
     #
     print_and_log(f'Freq. Closest Nash Index (-1,0,1): ({freq_closest_nash_idx_is_minus:.3f}, {freq_closest_nash_idx_is_zero:.3f}, {freq_closest_nash_idx_is_plus:.3f}) out of ({freq_nash_idxs[-1]:.3f}, {freq_nash_idxs[0]:.3f}, {freq_nash_idxs[1]:.3f})', f)
-
+    
+    print_and_log(f'------ Distance from Default ------', f)
+    print_and_log(f'Average Distance from nxn_default: {avg_dist_from_default:.3f} ({std_dist_from_default:.3f})', f)
+    print_and_log(f'Distance from nxn_default Quantiles (0.25, 0.5, 0.75, 0.90, 0.95, 0.99, 1.0): {dist_from_default_quant}', f)
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate a model on a dataset of games")
@@ -261,6 +271,17 @@ def main():
 
     print('\nSaving evaluation to file...')
     save_to_pickle(evaluation_output, f'{eval_dir}/evaluation_output.pkl')
+
+    # compute distance from nxn_default
+    n_actions = dataset_metadata['n_actions']
+    eval_dir_nxn_default = os.path.join('models',f'{n_actions}x{n_actions}_default',dataset_dir,'evaluation_output.pkl')
+    dist_from_default = np.ones(len(testing_set))*np.inf
+    if os.path.exists(eval_dir_nxn_default):
+        evaluation_nxn_default = load_from_pickle(eval_dir_nxn_default)
+        strategy_profiles_nxn_default = evaluation_nxn_default['strategy_profiles']
+        strategy_profiles = evaluation_output['strategy_profiles']
+        dist_from_default = np.amax(np.sum(np.abs(strategy_profiles_nxn_default - strategy_profiles), axis=2), axis=1) * 0.5
+    evaluation_output['dist_from_default'] = dist_from_default
 
     regret_profile = evaluation_output['regret_profile']
     mass_on_dominated = evaluation_output['mass_on_dominated']
@@ -358,7 +379,6 @@ def main():
         print_evaluation_results(evaluation_output, statistics, subspace_c_multiple_pure_nash_mask, f=f)
     
     epsilon_distance_nash = np.max(regret_profile, axis=1)
-    n_actions = dataset_metadata['n_actions']
     plot_cdfs(epsilon_distance_nash, epsilon_distance_nash[zero_pure_nash_mask], 
           eval_dir, file_name="regret_cdf.pdf", 
           xlabel='MaxReg', ylabel='eCDF',
