@@ -100,48 +100,46 @@ def evaluate(model1: torch.nn.Module, model2: torch.nn.Module, testing_set: np.n
     closest_nash_is_harsanyiselten = np.empty(n_games, dtype=bool)
     closest_nash_stability_index = np.empty(n_games, dtype=np.int8)
     
-    with torch.no_grad():  # Disable gradient computation during evaluation
+    with torch.no_grad():
         start_time = time.time()
-        for start_index in range(0, n_games, batch_size):
-            # Process input batch
-            end_index = start_index + min(batch_size, n_games - start_index)
-            G = testing_set[start_index:end_index]
-            G_transpose = transpose_game(G)
+        
+        # Process input batch
+        G = testing_set
+        G_transpose = transpose_game(G)
+        
+        # Forward pass
+        p = model1(G)
+        q = model2(G_transpose)
+        
+        # compute regrets
+        regret_profile[:,0] = Loss.regret(G, p, q)             / (G[:,0,:,:].amax(dim=(1,2)) - G[:,0,:,:].amin(dim=(1,2)))
+        regret_profile[:,1] = Loss.regret(G_transpose, q, p)   / (G[:,1,:,:].amax(dim=(1,2)) - G[:,1,:,:].amin(dim=(1,2)))
+        
+        # compute expected payoffs 
+        expected_payoff_profile[:,0] = get_expected_payoff(G,p,q)
+        expected_payoff_profile[:,1] = get_expected_payoff(G_transpose,q,p)
             
-            # Forward pass
-            p = model1(G)
-            q = model2(G_transpose)
-            
-            # compute regrets
-            regret_profile[start_index:end_index, 0] = Loss.regret(G, p, q)             / (G[:,0,:,:].amax(dim=(1,2)) - G[:,0,:,:].amin(dim=(1,2)))
-            regret_profile[start_index:end_index, 1] = Loss.regret(G_transpose, q, p)   / (G[:,1,:,:].amax(dim=(1,2)) - G[:,1,:,:].amin(dim=(1,2)))
-            
-            # compute expected payoffs 
-            expected_payoff_profile[start_index:end_index,0] = get_expected_payoff(G,p,q)
-            expected_payoff_profile[start_index:end_index,1] = get_expected_payoff(G_transpose,q,p)
-            
-            # Log strategy profiles
-            strategy_profiles[start_index:end_index, 0, :] = p[:,:n_actions]
-            strategy_profiles[start_index:end_index, 1, :] = q[:,:n_actions]
-            
-            # Check if agents play dominated strategy with prob higher than 0.05
-            mass_on_dominated[start_index:end_index, 0] = get_masked_probability(p, dominated_mask[start_index:end_index, 0, :])
-            mass_on_dominated[start_index:end_index, 1] = get_masked_probability(q, dominated_mask[start_index:end_index, 1, :])
-            mass_on_eliminated[start_index:end_index, 0] = get_masked_probability(p, ~rationalizable_mask[start_index:end_index, 0, :])
-            mass_on_eliminated[start_index:end_index, 1] = get_masked_probability(q, ~rationalizable_mask[start_index:end_index, 1, :])
-            
-            closest_nash_idx_, closest_nash_distance_ = get_closest_nash(strategy_profiles[start_index:end_index, :, :], set_nash[start_index:end_index])
-            closest_nash_idx[start_index:end_index] = closest_nash_idx_
-            closest_nash_distance[start_index:end_index] = closest_nash_distance_
-            
-            closest_nash_is_pareto[start_index:end_index] = get_value(closest_nash_idx_, pareto_nash_mask[start_index:end_index])
-            closest_nash_is_utilitarian[start_index:end_index] = get_value(closest_nash_idx_, utilitarian_nash_mask[start_index:end_index])
-            #closest_nash_is_payoff_dominant[start_index:end_index] = get_value(closest_nash_idx_, payoff_dominant_mask[start_index:end_index])
-            closest_nash_is_harsanyiselten[start_index:end_index] = get_value(closest_nash_idx_, harsanyi_selten_mask[start_index:end_index])
-            closest_nash_stability_index[start_index:end_index] = get_value(closest_nash_idx_, nash_index[start_index:end_index])
-            
-            progress_percentage = (end_index / n_games) * 100
-            print(f"\rProgress: {progress_percentage:.2f}%, Time Elapsed: {time.time() - start_time:.0f} sec", end='', flush=True)
+        # Log strategy profiles
+        strategy_profiles[:,0,:] = p[:,:n_actions]
+        strategy_profiles[:,1,:] = q[:,:n_actions]
+        
+        # Check if agents play dominated strategy with prob higher than 0.05
+        mass_on_dominated[:,0] = get_masked_probability(p, dominated_mask[:,0,:])
+        mass_on_dominated[:,1] = get_masked_probability(q, dominated_mask[:,1,:])
+        mass_on_eliminated[:,0] = get_masked_probability(p, ~rationalizable_mask[:,0,:])
+        mass_on_eliminated[:,1] = get_masked_probability(q, ~rationalizable_mask[:,1,:])
+        
+        closest_nash_idx_, closest_nash_distance_ = get_closest_nash(strategy_profiles[:,:], set_nash[:])
+        closest_nash_idx[:] = closest_nash_idx_
+        closest_nash_distance[:] = closest_nash_distance_
+        
+        closest_nash_is_pareto[:] = get_value(closest_nash_idx_, pareto_nash_mask[:])
+        closest_nash_is_utilitarian[:] = get_value(closest_nash_idx_, utilitarian_nash_mask[:])
+        #closest_nash_is_payoff_dominant[:] = get_value(closest_nash_idx_, payoff_dominant_mask[:])
+        closest_nash_is_harsanyiselten[:] = get_value(closest_nash_idx_, harsanyi_selten_mask[:])
+        closest_nash_stability_index[:] = get_value(closest_nash_idx_, nash_index[:])
+        
+        print(f"\rTime Elapsed: {time.time() - start_time:.0f} sec")
     
     print("\nEvaluation complete.")
     
