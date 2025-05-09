@@ -8,8 +8,8 @@ from src.utilities.viz_utils import *
 from src.utilities.io_utils import *
 
 parser = argparse.ArgumentParser(description="Evaluate a model on a dataset of games")
-parser.add_argument('--model', type=str, default='2x2_default_log', help="Model folder")
-parser.add_argument('--dataset', type=str, default='2x2_default_avon', help="Dataset Folder")
+parser.add_argument('--model', type=str, default=None, help="Model folder")
+parser.add_argument('--dataset', type=str, default=None, help="Dataset Folder")
 # Process configs
 args = parser.parse_args()
 
@@ -77,10 +77,10 @@ plot_learning_curves(closest_nash_distance, statistics, model_log_steps,
                      confidence = 0)
 
 # fits 
-if '2x2' in args.model:
+if n_actions == 2:
     exp_fit_range = [75, 140]
     power_fit_range = [140, None]
-elif '3x3' in args.model:
+elif n_actions == 3:
     exp_fit_range = [200, 600]
     power_fit_range = [600, None]
 
