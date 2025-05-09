@@ -41,7 +41,7 @@ def print_epoch_stats(step: int, log_interval: int, batch_size: int, avg_regret_
 
 def train(model1: torch.nn.Module, optimizer1: Optimizer, scheduler1: _LRScheduler, 
           model2: torch.nn.Module, optimizer2: Optimizer, scheduler2: _LRScheduler, 
-          n_games: int, batch_size: int, loss_function: Loss, rand_bimatrix: BimatrixSampler, timestamp: str):
+          n_games: int, batch_size: int, loss_function: Loss, rand_bimatrix: BimatrixSampler, model_path: str):
     """
     Args:
         modeli (torch.nn.Module): Player i's model for to train.
@@ -49,7 +49,7 @@ def train(model1: torch.nn.Module, optimizer1: Optimizer, scheduler1: _LRSchedul
         scheduleri (_LRScheduler): Player i's learning rate scheduler.
         n_games (int): Number of games to simulate.
         batch_size (int): Number of games in each batch.
-        timestamp (str): Timestamp for saving the model (empty if log_models = false)
+        model_path (str): Path for saving the model (empty if log_models = false)
     Returns:
         tuple: (model1, model2, avg_regrets) where avg_regrets is a numpy array
                of average regrets per log interval.
@@ -64,9 +64,9 @@ def train(model1: torch.nn.Module, optimizer1: Optimizer, scheduler1: _LRSchedul
     avg_regrets = np.empty((num_logs, 2), dtype=np.float16)
     regret_accum = torch.zeros(2, device=device)
 
-    log_models = bool(timestamp)
+    log_models = bool(model_path)
     if log_models:
-        models_log_path = os.path.join("models", timestamp, "models_log")
+        models_log_path = os.path.join(model_path, "models_log")
         exp = np.ceil(np.log10(n_optimization_steps)).astype(int)
         model_log_steps = np.logspace(0, exp, num=20*exp+1, dtype=int)
 

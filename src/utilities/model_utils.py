@@ -125,8 +125,7 @@ def save_model(model, base_dir, file_name='model', metadata=None, verbose=False)
     
     # Save model metadata if provided
     if metadata is not None:
-        metadata_file_name = os.path.join(base_dir, f"{file_name}_metadata.json")
-        save_metadata(metadata_file_name, metadata)
+        save_metadata(metadata, base_dir, file_name=file_name)
     
     if verbose:
         print(f"Model saved in {path}")

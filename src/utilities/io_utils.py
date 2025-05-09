@@ -38,8 +38,10 @@ def log_metadata(file_path, metadata, intro, w='w'):
                 f.write(f"{param}: {value}\n")
         f.write("\n")
 
-def save_metadata(file_path, metadata, w='w'):
-    with open(file_path, 'w') as f:
+def save_metadata(metadata, base_dir, file_name='metadata', w='w'):
+    os.makedirs(base_dir, exist_ok=True)
+    file_path = os.path.join(base_dir, f'{file_name}.json')
+    with open(file_path, w) as f:
         json.dump(metadata, f, indent=4)
 
 def load_metadata(base_dir, directory, metadata_file):
