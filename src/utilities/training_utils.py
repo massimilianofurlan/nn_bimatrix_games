@@ -67,8 +67,11 @@ def train(model1: torch.nn.Module, optimizer1: Optimizer, scheduler1: _LRSchedul
     log_models = bool(model_path)
     if log_models:
         models_log_path = os.path.join(model_path, "models_log")
+        save_model(model1, models_log_path, file_name='model1_0')
+        save_model(model2, models_log_path, file_name='model2_0')
         exp = np.ceil(np.log10(n_optimization_steps)).astype(int)
-        model_log_steps = np.logspace(0, exp, num=20*exp+1, dtype=int)
+        model_log_steps = np.unique(np.logspace(0, exp, num=20*exp+1, dtype=int))
+        model_log_steps = model_log_steps[model_log_steps < n_optimization_steps]
 
     start_time = time.time()
     for step in range(n_optimization_steps):
@@ -94,9 +97,9 @@ def train(model1: torch.nn.Module, optimizer1: Optimizer, scheduler1: _LRSchedul
         regret_accum[0] += regret1.mean()
         regret_accum[1] += regret2.mean()
         
-        if log_models and step in model_log_steps: 
-            save_model(model1, models_log_path, file_name=f'model1_{step:.0f}')
-            save_model(model2, models_log_path, file_name=f'model2_{step:.0f}')
+        if log_models and step + 1 in model_log_steps:
+            save_model(model1, models_log_path, file_name=f'model1_{step+1:.0f}')
+            save_model(model2, models_log_path, file_name=f'model2_{step+1:.0f}')
 
         if (step+1) % log_interval == 0:
             avg_regret_interval = regret_accum / log_interval

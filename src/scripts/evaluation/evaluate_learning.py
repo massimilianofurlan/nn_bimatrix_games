@@ -38,7 +38,7 @@ print(f"All done")
 n_optim_steps = simulation_metadata['optimization']['optimization_steps']
 exp = np.ceil(np.log10(n_optim_steps)).astype(int)
 model_log_steps = np.unique(np.logspace(0, exp, num=20*exp+1, dtype=int))
-model_log_steps = model_log_steps[model_log_steps <= n_optim_steps]
+model_log_steps = model_log_steps[model_log_steps < n_optim_steps]
 evaluation_outputs = []
 for step in model_log_steps:
     # Load models
