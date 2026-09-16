@@ -56,7 +56,7 @@ def train(model1: torch.nn.Module, optimizer1: Optimizer, scheduler1: _LRSchedul
     """
     
     n_optimization_steps = n_games // batch_size
-    log_interval = n_optimization_steps // 128    
+    log_interval = max(1, n_optimization_steps // 128)
     device = rand_bimatrix.device
 
     # accumulate regrets per log interval

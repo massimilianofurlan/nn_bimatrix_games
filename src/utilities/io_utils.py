@@ -2,6 +2,7 @@ import os
 import json
 import toml
 import pickle
+import torch
 
 # Input / Output utils 
 
@@ -108,15 +109,14 @@ def load_from_pickle(filename):
         return pickle.load(f)
 
 def process_config(args, config):
-    # add n_actions to subcategories
+    training_set = None
+    if args.training_set:
+        from src.utilities.data_utils import load_dataset
+        training_set = torch.tensor(load_dataset(args.training_set), dtype=torch.float)
+        config['n_actions'] = training_set.size(2)
+        config['bimatrix']['payoffs_space'] = 'set:' + args.training_set
+        config['bimatrix']['game_class'] = 'set:' + args.training_set
     config["bimatrix"]["n_actions"] = config['n_actions']
     config["model1"]["n_actions"] = config['n_actions']
     config["model2"]["n_actions"] = config['n_actions']
-    # overwrite configs to training set configs
-    training_set = None
-    if args.training_set:
-        training_set =  torch.tensor(load_dataset(args.training_set), dtype=torch.float)
-        config['n_actions'] = training_set.size(2)
-        config['payoffs_space'] = 'set:' + args.training_set
-        config['game_class'] = 'set:' + args.training_set
     return config, training_set

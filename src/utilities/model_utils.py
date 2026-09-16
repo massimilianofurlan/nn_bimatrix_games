@@ -79,7 +79,7 @@ def generate_metadata(config, args):
     return metadata, timestamp
 
 def initialize_weigths(model1, model2, init_model):
-    device = model1.device
+    device = next(model1.parameters()).device
     model1_path = os.path.join('models', init_model, "model1.pth")
     model2_path = os.path.join('models', init_model, "model2.pth")
     model1_weigths = torch.load(model1_path, map_location=torch.device(device), weights_only=True)['model_state_dict']
