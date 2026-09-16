@@ -96,4 +96,4 @@ python -m src.scripts.evaluation.evaluate --model=2x2_example --dataset=2x2_exam
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 only. See the [LICENSE](LICENSE) file for details.
