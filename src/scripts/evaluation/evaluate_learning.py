@@ -84,9 +84,10 @@ elif n_actions == 3:
     exp_fit_range = [200, 600]
     power_fit_range = [600, None]
 
-plot_learning_curve_fit(regret_profiles, model_log_steps,
-                        base_dir=f'models/{model_dir}/{dataset_dir}', file_name=f"curvefits.pdf",
-                        xlabel='Step', ylabel='Avg. MaxReg',
-                        title=rf'$\mathbf{{{n_actions} \times {n_actions}}}$ \textbf{{Games}}',
-                        exp_fit_range=exp_fit_range, power_fit_range=power_fit_range)
+if n_actions in [2, 3]:
+    plot_learning_curve_fit(regret_profiles, model_log_steps,
+                            base_dir=f'models/{model_dir}/{dataset_dir}', file_name=f"curvefits.pdf",
+                            xlabel='Step', ylabel='Avg. MaxReg',
+                            title=rf'$\mathbf{{{n_actions} \times {n_actions}}}$ \textbf{{Games}}',
+                            exp_fit_range=exp_fit_range, power_fit_range=power_fit_range)
 
