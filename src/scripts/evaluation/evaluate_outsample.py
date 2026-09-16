@@ -13,11 +13,13 @@ def main():
     parser = argparse.ArgumentParser(description="Evaluate a model on a dataset of games perturbed by random affine transformations")
     parser.add_argument('--model', type=str, default=None, help="Model folder")
     parser.add_argument('--dataset', type=str, default=None, help="Dataset Folder")
+    parser.add_argument('--seed', type=int, default=1, help="Seed")
     # Process configs
     args = parser.parse_args()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
-    torch.manual_seed(1)
+    torch.manual_seed(args.seed)
+    rng = np.random.default_rng(args.seed)
 
     # load models
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -30,8 +32,8 @@ def main():
     testing_set, dataset_metadata, dataset_dir = select_dataset(dataset_dir=args.dataset)
     
     n_games, n_players, n_actions, _ = testing_set.shape
-    a = np.random.rand(n_games, n_players) * n_actions * 2 - n_actions
-    b = np.random.rand(n_games, n_players) * (n_actions-1.0) + 1.0
+    a = rng.random((n_games, n_players)) * n_actions * 2 - n_actions
+    b = rng.random((n_games, n_players)) * (n_actions-1.0) + 1.0
     a = a.reshape(n_games, n_players, 1, 1)
     b = b.reshape(n_games, n_players, 1, 1)
     testing_set = a + b * testing_set 
@@ -57,6 +59,7 @@ def main():
     eval_file = f'{eval_dir}/evaluation_outsample.txt'
     log_metadata(eval_file, simulation_metadata, "Models: ")
     log_metadata(eval_file, dataset_metadata, "Dataset: ", 'a')
+    log_metadata(eval_file, {'seed': args.seed}, "Evaluation: ", 'a')
 
     f = open(eval_file, 'a')
 

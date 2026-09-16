@@ -39,12 +39,12 @@ Note: the --log_models flag is only required to reproduce Figures 5 and 6; you c
 
 Generate (labeled) dataset set of 2 x 2 games 
 ```bash
-python -m src.scripts.data.generate_evalset --n_games=131072 --payoffs_space=sphere_preferences --game_class=general_sum --n_actions=2 --n_traces=10000 --name=2x2_default
+python -m src.scripts.data.generate_evalset --n_games=131072 --payoffs_space=sphere_preferences --game_class=general_sum --n_actions=2 --n_traces=10000 --name=2x2_default --seed=1
 ```
 
 Generate (labeled) dataset set of 3 x 3 games
 ```bash
-python -m src.scripts.data.generate_evalset --n_games=131072 --payoffs_space=sphere_preferences --game_class=general_sum --n_actions=3 --n_traces=10000 --name=3x3_default
+python -m src.scripts.data.generate_evalset --n_games=131072 --payoffs_space=sphere_preferences --game_class=general_sum --n_actions=3 --n_traces=10000 --name=3x3_default --seed=1
 ```
 
 Note: reduce the --n_traces value to speed up execution (minimum is 0); higher values yield more accurate equilibrium‐selection results (Table 4)
@@ -66,7 +66,7 @@ python -m src.scripts.evaluation.evaluate_selection --model=2x2_default --datase
 
 Evaluate play on affine transformations
 ```bash
-python -m src.scripts.evaluation.evaluate_outsample --model=2x2_default --dataset=2x2_default
+python -m src.scripts.evaluation.evaluate_outsample --model=2x2_default --dataset=2x2_default --seed=1
 ```
 
 Evaluate abidance to axioms
@@ -98,7 +98,7 @@ python -m src.scripts.evaluation.evaluate_selection --model=3x3_default --datase
 
 Evaluate play on affine transformations
 ```bash
-python -m src.scripts.evaluation.evaluate_outsample --model=3x3_default --dataset=3x3_default
+python -m src.scripts.evaluation.evaluate_outsample --model=3x3_default --dataset=3x3_default --seed=1
 ```
 
 Evaluate abidance to axioms
