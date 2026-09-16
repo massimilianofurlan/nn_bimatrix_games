@@ -35,10 +35,7 @@ def get_closest_nash(strategy_profiles: torch.Tensor, set_nash):
 
 def get_value(indices: np.ndarray, array_list: np.ndarray) -> np.ndarray:
     # get value from each array in a list of arrays based on provided indices.
-    values = np.zeros(len(indices), dtype=bool)
-    for i, idx in enumerate(indices):
-        values[i] = array_list[i][idx]
-    return values
+    return np.array([array_list[i][idx] for i, idx in enumerate(indices)])
 
 def border_game(game_batch, n_actions, n_actions_model, max_payoff = None):
     # border n_actions x n_actions game with a strictly dominated strategy 
@@ -56,7 +53,7 @@ def border_game(game_batch, n_actions, n_actions_model, max_payoff = None):
         game_batch_[:, 1, :, n_actions:] = game_batch_[:, 1, :, 0].unsqueeze(2) - max_payoff/4
         return game_batch_
 
-def evaluate(model1: torch.nn.Module, model2: torch.nn.Module, testing_set: np.ndarray, labels: dict, device: torch.device, batch_size: int = 16384):
+def evaluate(model1: torch.nn.Module, model2: torch.nn.Module, testing_set: np.ndarray, labels: dict, device: torch.device):
     """
     Evaluate self-play performance of a model on a batch of games.
 
@@ -65,8 +62,6 @@ def evaluate(model1: torch.nn.Module, model2: torch.nn.Module, testing_set: np.n
         testing_set (np.ndarray): Batch of games to evaluate on.
         labels (Dict[str, np.ndarray]): Dictionary containing labels for the games.
         device (torch.device): Device to perform evaluation on.
-        batch_size (int): Batch size for evaluation.
-
     Returns:
         Tuple: Results of the evaluation.
     """

@@ -93,13 +93,13 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     avg_gamma_dominated = np.mean(mass_on_dominated)
     std_gamma_dominated = np.std(mass_on_dominated)
     freq_gamma_undominated = np.mean(mass_on_dominated < gamma)
-    freq_double_gamma_undominated = np.mean(mass_on_dominated < gamma)
+    freq_double_gamma_undominated = np.mean(mass_on_dominated < gamma*2)
     gamma_dominated_quant = quantiles(mass_on_dominated)
     # gamma-rationalizable (strategy)
     avg_gamma_eliminated = np.mean(mass_on_eliminated)
     std_gamma_eliminated = np.std(mass_on_eliminated)
-    freq_gamma_rationalizable = np.mean(mass_on_eliminated < gamma)  
-    freq_double_gamma_rationalizable = np.mean(mass_on_eliminated < gamma)  
+    freq_gamma_rationalizable = np.mean(mass_on_eliminated < gamma)
+    freq_double_gamma_rationalizable_strategy = np.mean(mass_on_eliminated < gamma*2)
     gamma_eliminated_quant = quantiles(mass_on_eliminated)
     
     ################ EQUILIBRIUM BEHAVIOR ################
@@ -126,7 +126,7 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     freq_double_gamma_nash = np.mean(gamma_distance_nash < gamma*2)
     # frequence gamma-rationalizable (strategy profile)
     freq_gamma_profile_rationalizable =  np.mean(gamma_distance_rationalizable_profile < gamma)
-    freq_double_gamma_rationalizable = np.mean(gamma_distance_rationalizable_profile < gamma*2)
+    freq_double_gamma_rationalizable_profile = np.mean(gamma_distance_rationalizable_profile < gamma*2)
     
     ################ SELECTION ################
     
@@ -187,8 +187,8 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     print_and_log(f'gamma-Rationalizable Profile Quantiles (0.25, 0.5, 0.75, 0.90, 0.95, 0.99, 1.0): {gamma_distance_rationalizable_profile_quant}', f)
     print_and_log(f'Freq. {gamma}-Nash: {freq_gamma_nash:.3f}', f)
     print_and_log(f'Freq. {2*gamma}-Nash: {freq_double_gamma_nash:.3f}', f)
-    print_and_log(f'Freq. {gamma}-Rationalizable Profile: {freq_gamma_profile_rationalizable:.3f}', f)    
-    print_and_log(f'Freq. {2*gamma}-Rationalizable Profile: {freq_double_gamma_rationalizable:.3f}', f)
+    print_and_log(f'Freq. {gamma}-Rationalizable Profile: {freq_gamma_profile_rationalizable:.3f}', f)
+    print_and_log(f'Freq. {2*gamma}-Rationalizable Profile: {freq_double_gamma_rationalizable_profile:.3f}', f)
     
     #if n_has_dominated_mask > 0:
     print_and_log(f'------ Individual Rationality ------', f)
@@ -200,7 +200,7 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     print_and_log(f'Freq. {gamma}-Undominated: {freq_gamma_undominated:.3f}', f)
     print_and_log(f'Freq. {2*gamma}-Undominated: {freq_double_gamma_undominated:.3f}', f)
     print_and_log(f'Freq. {gamma}-Rationalizable: {freq_gamma_rationalizable:.3f}', f)
-    print_and_log(f'Freq. {2*gamma}-Rationalizable: {freq_double_gamma_rationalizable:.3f}', f)
+    print_and_log(f'Freq. {2*gamma}-Rationalizable: {freq_double_gamma_rationalizable_strategy:.3f}', f)
     
     #if n_nash_not_singleton > 0:
     print_and_log(f'------ Selection ------', f)
@@ -269,19 +269,22 @@ def main():
     print('\nTesting model...')
     evaluation_output = evaluate(model1, model2, testing_set, labels, device)
 
-    print('\nSaving evaluation to file...')
-    save_to_pickle(evaluation_output, f'{eval_dir}/evaluation_output.pkl')
-
     # compute distance from nxn_default
     n_actions = dataset_metadata['n_actions']
-    eval_dir_nxn_default = os.path.join('models',f'{n_actions}x{n_actions}_default',dataset_dir,'evaluation_output.pkl')
+    default_model_dir = f'{n_actions}x{n_actions}_default'
+    eval_dir_nxn_default = os.path.join('models',default_model_dir,dataset_dir,'evaluation_output.pkl')
     dist_from_default = np.ones(len(testing_set))*np.inf
-    if os.path.exists(eval_dir_nxn_default):
+    if model_dir == default_model_dir:
+        dist_from_default = np.zeros(len(testing_set))
+    elif os.path.exists(eval_dir_nxn_default):
         evaluation_nxn_default = load_from_pickle(eval_dir_nxn_default)
         strategy_profiles_nxn_default = evaluation_nxn_default['strategy_profiles']
         strategy_profiles = evaluation_output['strategy_profiles']
         dist_from_default = np.amax(np.sum(np.abs(strategy_profiles_nxn_default - strategy_profiles), axis=2), axis=1) * 0.5
     evaluation_output['dist_from_default'] = dist_from_default
+
+    print('\nSaving evaluation to file...')
+    save_to_pickle(evaluation_output, f'{eval_dir}/evaluation_output.pkl')
 
     regret_profile = evaluation_output['regret_profile']
     mass_on_dominated = evaluation_output['mass_on_dominated']

@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
             # mask dominated strategy
             dominated_mask1 = get_dominated_mask(game_np64[0])
-            dominated_mask2 = get_dominated_mask(game_np64[1])
+            dominated_mask2 = get_dominated_mask(game_np64[1].T)
             # mask rationalizable strategy profiles
             rationalizable_mask = get_rationalizable_mask(game_np64)
             # compute nash equilibria

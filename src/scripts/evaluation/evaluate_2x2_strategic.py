@@ -70,7 +70,7 @@ p_mesh = p.view(n_points, n_points, n_actions)[:, :, 0].detach().cpu().numpy()
 q_mesh = q.view(n_points, n_points, n_actions)[:, :, 0].detach().cpu().numpy()
 #regret1_mesh = regret1.view(n_points, n_points).detach().cpu().numpy() 
 #regret2_mesh = regret2.view(n_points, n_points).detach().cpu().numpy()
-epsilon_distance_nash = regret2.view(n_points, n_points).detach().cpu().numpy()
+epsilon_distance_nash = epsilon_distance_nash.view(n_points, n_points).detach().cpu().numpy()
 
 # --- Font + LaTeX style ---
 plt.rcParams.update({

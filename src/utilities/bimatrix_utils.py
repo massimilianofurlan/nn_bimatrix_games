@@ -69,7 +69,7 @@ def get_maxmin_payoff(G):
 
     #maxmin_x = result1.x[0:n_actions]
     #maxmin_y = result2.x[0:n_actions]
-    maxmin_payoff = np.array([result1.fun, result2.fun])
+    maxmin_payoff = -np.array([result1.fun, result2.fun])
     return maxmin_payoff
         
 def get_pure_nash_mask(set_nash):
