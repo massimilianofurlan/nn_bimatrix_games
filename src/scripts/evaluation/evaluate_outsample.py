@@ -3,7 +3,11 @@ import sys
 import os 
 import torch
 import numpy as np
-from src.scripts.evaluation.evaluate import *
+from src.scripts.evaluation.evaluate import print_evaluation_results
+from src.utilities.model_utils import select_models
+from src.utilities.data_utils import select_dataset, load_labels, load_statistics
+from src.utilities.eval_utils import evaluate
+from src.utilities.io_utils import print_metadata, preview_dataset, log_metadata, load_from_pickle, print_and_log
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate a model on a dataset of games perturbed by random affine transformations")
