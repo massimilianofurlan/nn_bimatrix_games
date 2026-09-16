@@ -59,8 +59,9 @@ n_points = 301
 G = generate_nash_subspace(n_points, device=device)
 G_transpose = transpose_game(G)
 
-p = model1(G)
-q = model2(G_transpose)
+with torch.no_grad():
+    p = model1(G)
+    q = model2(G_transpose)
 
 regret1 = Loss.regret(G, p, q)           / (G[:,0].amax(dim=(1,2)) - G[:,0].amin(dim=(1,2)))
 regret2 = Loss.regret(G_transpose, q, p) / (G[:,1].amax(dim=(1,2)) - G[:,1].amin(dim=(1,2)))
