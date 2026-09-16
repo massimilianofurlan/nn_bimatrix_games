@@ -3,7 +3,7 @@ import numpy as np
 from src.modules.sampler import BimatrixSampler
 from src.utilities.bimatrix_utils import get_nash_equilibria
 
-def test_bimatrix_sampler():
+def run_bimatrix_sampler_tests():
     n_actions = 3
     batch_size = 2**25
 
@@ -139,5 +139,5 @@ def test_bimatrix_sampler():
     passed = n_passed == n_tests
     print_result("Sphere Equivalent Subspaces Nash Equivalence Check", passed, f"{n_tests}", n_passed)
 
-# Run the tests
-test_bimatrix_sampler()
+if __name__ == "__main__":
+    run_bimatrix_sampler_tests()

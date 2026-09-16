@@ -28,8 +28,8 @@ def test_dominated_and_rationalizable(G):
     A, B = G
     
     # Test dominated strategies
-    dominated_mask_A, _ = get_dominated_mask(A)
-    dominated_mask_B, _ = get_dominated_mask(B.T)
+    dominated_mask_A = get_dominated_mask(A)
+    dominated_mask_B = get_dominated_mask(B.T)
     
     # not all strategies dominated
     assert not np.all(dominated_mask_A) and not np.all(dominated_mask_B), \
@@ -143,8 +143,9 @@ def run_test(test_function, games, test_name):
     print(" [ok]")
 
 # Example usage for each test function:
-run_test(test_expected_payoffs, games, "expected payoffs")
-run_test(test_dominated_and_rationalizable, games, "dominated and rationalizable strategies")
-run_test(test_nash_equilibria, games, "Nash equilibria")
-run_test(test_maxmin_payoff, games, "maxmin payoff")
-run_test(test_pareto_optimal_nash_mask, games, "Pareto optimal Nash mask")
+if __name__ == "__main__":
+    run_test(test_expected_payoffs, games, "expected payoffs")
+    run_test(test_dominated_and_rationalizable, games, "dominated and rationalizable strategies")
+    run_test(test_nash_equilibria, games, "Nash equilibria")
+    run_test(test_maxmin_payoff, games, "maxmin payoff")
+    run_test(test_pareto_optimal_nash_mask, games, "Pareto optimal Nash mask")
