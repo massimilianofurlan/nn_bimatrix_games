@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 from src.modules.sampler import BimatrixSampler
 from src.utilities.bimatrix_utils import get_nash_equilibria
 
@@ -101,7 +100,7 @@ def run_bimatrix_sampler_tests():
     B_vec = G[:,1,:,:].reshape(-1, n_actions**2)
     inners_A = torch.matmul(A_vec, v_norm_A)
     inners_B = torch.matmul(B_vec, v_norm_B)
-    min_inners = min(inners_A.amax(), inners_B.amax())
+    min_inners = min(inners_A.amin(), inners_B.amin())
     passed = min_inners > -1e-5
     print_result("Sphere Preferences Subspaces Inners Check", passed, "≈0", min_inners)
 
@@ -132,9 +131,10 @@ def run_bimatrix_sampler_tests():
         set_games = sampler(n_games)
         list_nash = []
         for G in set_games:
-            list_nash.append(get_nash_equilibria(G, rational = False)[0].round(4))
-        first_nash = list_nash[0].sort(axis=0)
-        count_equal = sum(np.array_equal(nash.sort(axis=0), first_nash) for nash in list_nash)
+            set_nash = get_nash_equilibria(G, rational = False)[0].round(4)
+            list_nash.append({tuple(nash.flatten()) for nash in set_nash})
+        first_nash = list_nash[0]
+        count_equal = sum(nash == first_nash for nash in list_nash)
         n_passed += (count_equal == n_games)
     passed = n_passed == n_tests
     print_result("Sphere Equivalent Subspaces Nash Equivalence Check", passed, f"{n_tests}", n_passed)
