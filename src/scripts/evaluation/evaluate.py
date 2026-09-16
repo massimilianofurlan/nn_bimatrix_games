@@ -25,50 +25,31 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     if ~np.any(mask):
         return
     
-    # unpacking input data (evaluation)
-    (strategy_profiles, regret_profile, expected_payoff_profile, mass_on_dominated, 
-    mass_on_eliminated, gamma_distance_nash, closest_nash_idx, 
-    closest_nash_is_pareto, closest_nash_is_utilitarian,
-    closest_nash_is_harsanyi_selten, closest_nash_index, dist_from_default) = evaluation_output.values()
-    # unpacking input data (game statistics)
-    (n_nash, n_pure_nash, n_dominated, n_rationalizable, 
-    n_pareto_optimal, n_utilitarian, n_payoff_dominant, n_harsanyi_selten,
-    n_index_minus, n_index_zero, n_index_plus) = statistics.values()
-    
-    # masking input data (evaluation)
-    strategy_profiles = strategy_profiles[mask]
-    regret_profile = regret_profile[mask]
-    expected_payoff_profile = expected_payoff_profile[mask]
-    mass_on_dominated = mass_on_dominated[mask]
-    mass_on_eliminated = mass_on_eliminated[mask]
-    gamma_distance_nash = gamma_distance_nash[mask]
-    closest_nash_is_pareto = closest_nash_is_pareto[mask]
-    closest_nash_is_utilitarian = closest_nash_is_utilitarian[mask]
-    closest_nash_is_harsanyi_selten = closest_nash_is_harsanyi_selten[mask]
-    closest_nash_index = closest_nash_index[mask]
-    dist_from_default = dist_from_default[mask]
-    # masking input data (statistics)
-    n_nash = n_nash[mask] 
-    n_pure_nash = n_pure_nash[mask] 
+    regret_profile = evaluation_output['regret_profile'][mask]
+    mass_on_dominated = evaluation_output['mass_on_dominated'][mask]
+    mass_on_eliminated = evaluation_output['mass_on_eliminated'][mask]
+    gamma_distance_nash = evaluation_output['closest_nash_distance'][mask]
+    closest_nash_is_pareto = evaluation_output['closest_nash_is_pareto'][mask]
+    closest_nash_is_utilitarian = evaluation_output['closest_nash_is_utilitarian'][mask]
+    closest_nash_is_harsanyi_selten = evaluation_output['closest_nash_is_harsanyiselten'][mask]
+    closest_nash_index = evaluation_output['closest_nash_stability_index'][mask]
+    dist_from_default = evaluation_output['dist_from_default'][mask]
+
+    n_nash = statistics['n_nash'][mask]
+    n_pure_nash = statistics['n_pure_nash'][mask]
     n_mixed_nash = n_nash - n_pure_nash
-    n_dominated = n_dominated[mask] 
-    n_rationalizable = n_rationalizable[mask] 
-    n_pareto_optimal = n_pareto_optimal[mask] 
-    n_utilitarian = n_utilitarian[mask] 
-    n_payoff_dominant = n_payoff_dominant[mask] 
-    n_harsanyi_selten = n_harsanyi_selten[mask] 
-    n_index_minus = n_index_minus[mask] 
-    n_index_zero = n_index_zero[mask] 
-    n_index_plus = n_index_plus[mask] 
-    
+    n_pareto_optimal = statistics['n_pareto_optimal'][mask]
+    n_payoff_dominant = statistics['n_payoff_dominant'][mask]
+    n_index_minus = statistics['n_index_minus'][mask]
+    n_index_zero = statistics['n_index_zero'][mask]
+    n_index_plus = statistics['n_index_plus'][mask]
+
     # computing submask
-    n_nash_masks, n_nash_count = get_mask(n_nash)
-    n_pure_nash_masks, n_pure_nash_count = get_mask(n_pure_nash)
-    n_mixed_nash_masks, n_mixed_nash_count = get_mask(n_mixed_nash)
-    n_pareto_optimal_masks, n_pareto_optimal_count = get_mask(n_pareto_optimal)
-    n_utilitarian_masks, n_utilitarian_count = get_mask(n_utilitarian)
-    n_payoff_dominant_masks, n_payoff_dominant_count = get_mask(n_payoff_dominant)
-    n_harsanyi_selten_masks, n_harsanyi_selten_count = get_mask(n_harsanyi_selten) # almost surely unique for non-degenerate games
+    _, n_nash_count = get_mask(n_nash)
+    _, n_pure_nash_count = get_mask(n_pure_nash)
+    _, n_mixed_nash_count = get_mask(n_mixed_nash)
+    _, n_pareto_optimal_count = get_mask(n_pareto_optimal)
+    _, n_payoff_dominant_count = get_mask(n_payoff_dominant)
     
     
     ################ GAMES STATISTICS ################
@@ -163,8 +144,6 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     std_dist_from_default = np.std(dist_from_default)
     dist_from_default_quant = quantiles(dist_from_default)
     
-    #n_play_mixed = np.any(np.logical_and(strategy_profiles < 0.9, strategy_profiles > 0.1),axis=(1,2)).sum()
-    #print(f"Freq. Play Mixed: {n_play_mixed/n_games}")
     ############### OUTPUT TO TERMINAL ################
     
     print_and_log(f'------ Statistics ------', f)
@@ -173,9 +152,7 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     print_and_log(f'Freq. Number of Pure Nash: {(n_pure_nash_count/n_games).round(3)}', f)
     print_and_log(f'Freq. Number of Mixed Nash: {(n_mixed_nash_count/n_games).round(3)}', f)
     print_and_log(f'Freq. Number of Pareto Superior Nash: {(n_pareto_optimal_count/n_games).round(3)}', f)
-    #print_and_log(f'Freq. Number of Utilitarian Nash: {(n_utilitarian_count/n_games).round(3)}', f)
     print_and_log(f'Freq. Number of Payoff Dominant Nash: {(n_payoff_dominant_count/n_games).round(3)}', f)
-    #print_and_log(f'Freq. Number of Harsanyi-Selten Nash: {(n_harsanyi_selten_count/n_games).round(3)}', f)
     print_and_log(f'Freq. Nash index (-1,0,1): ({freq_nash_idxs[-1]:.3f}, {freq_nash_idxs[0]:.3f}, {freq_nash_idxs[1]:.3f})', f)
     
     print_and_log(f'------ Equilibrium ------', f)
