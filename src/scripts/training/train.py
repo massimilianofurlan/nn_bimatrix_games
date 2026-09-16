@@ -25,6 +25,8 @@ def main():
     
     # Process configs
     args = parser.parse_args()
+    if args.n_games % args.batch_size:
+        parser.error("--n_games must be divisible by --batch_size")
     config = read_config('config.toml', args.config)
     config, training_set = process_config(args, config)
 
