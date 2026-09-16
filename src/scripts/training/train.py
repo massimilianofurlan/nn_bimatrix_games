@@ -5,7 +5,6 @@ from src.utilities.io_utils import clear, read_config, print_metadata, save_to_p
 from src.utilities.model_utils import (save_model, initialize_model, initialize_optimizer, 
                                         initialize_scheduler, generate_metadata, initialize_weigths)
 from src.utilities.viz_utils import plot_total_regret
-from src.utilities.data_utils import load_dataset
 from src.utilities.training_utils import train
 from src.modules.loss_function import Loss
 from src.modules.sampler import BimatrixSampler
@@ -16,10 +15,10 @@ def main():
     parser.add_argument('--n_games', type=int, default=2**25, help="Number of games to train on")
     parser.add_argument('--config', type=str, default="2x2_example")    
     parser.add_argument('--batch_size', type=int, default=1024, help="Batch size for training")
-    parser.add_argument('--optimizer', type=str, default="SGD", choices=["SGD", "Adam", "OMD"], help="Optimizer (Adam or SGD)")
+    parser.add_argument('--optimizer', type=str, default="SGD", choices=["SGD", "Adam"], help="Optimizer (Adam or SGD)")
     parser.add_argument('--lr', type=float, default=0.1, help="Learning rate")
     parser.add_argument('--gamma', type=float, default=1, help="Decay rate for LR scheduler")
-    parser.add_argument('--init_model', type=str, default=None, help="Pre-trained model")    
+    parser.add_argument('--init_model', type=str, default=None, help="Initial model weights (requires matching config)")
     parser.add_argument('--log_models',  action='store_true', help="Log models")    
     parser.add_argument('--name', type=str, default=None, help="Model name")
     parser.add_argument('--seed', type=int, default=1, help="Seed")
@@ -37,11 +36,15 @@ def main():
     
     # Initialize row player network
     model1 = initialize_model(config['model1'], device)
-    optimizer1 = initialize_optimizer(model1, args.optimizer, args.lr)
-    scheduler1 = initialize_scheduler(optimizer1, args.gamma)
     
     # Initialize column player network
     model2 = initialize_model(config['model2'], device)
+
+    if args.init_model:
+        model1, model2 = initialize_weigths(model1, model2, args.init_model)
+
+    optimizer1 = initialize_optimizer(model1, args.optimizer, args.lr)
+    scheduler1 = initialize_scheduler(optimizer1, args.gamma)
     optimizer2 = initialize_optimizer(model2, args.optimizer, args.lr)
     scheduler2 = initialize_scheduler(optimizer2, args.gamma)
     
@@ -80,4 +83,3 @@ def main():
 if __name__ == "__main__":
     clear()
     main()
-
