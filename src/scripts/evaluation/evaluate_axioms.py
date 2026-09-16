@@ -303,8 +303,8 @@ with torch.no_grad():
 ###################### OUTPUT TO FILE AND TERM ######################
 #####################################################################
 
-def quantiles_string(arr, quants = quantiles.cpu().numpy()):
-    return np.array2string(np.quantile(arr.cpu().numpy(), quants), formatter={'float_kind': lambda x: f"{x:.3f}"})
+def quantiles_string(arr):
+    return np.array2string(arr.cpu().numpy(), formatter={'float_kind': lambda x: f"{x:.3f}"})
 
 f = open(eval_file, 'a')
 
