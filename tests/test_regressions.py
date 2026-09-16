@@ -103,4 +103,3 @@ def test_initial_model_weights(tmp_path, monkeypatch):
         assert torch.equal(source, target)
     for source, target in zip(source2.parameters(), target2.parameters()):
         assert torch.equal(source, target)
-
