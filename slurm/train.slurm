@@ -9,20 +9,11 @@
 
 module purge
 
-#source .localenv/bin/activate
-
-module load GCC/11.3.0
-module load OpenMPI/4.1.4
-module load SciPy-bundle/2022.05
-module load matplotlib/3.5.2
-module load PyTorch/1.12.1-CUDA-11.7.0
-module load CUDA/11.7.0
-module load GCCcore/11.3.0
-module load Python/3.10.4
-module load texlive/20230313
+module load GCC/11.3.0 Python/3.10.4 texlive/20230313
+source .localenv/bin/activate
 
 # test
-srun --unbuffered python3.10 -m src.scripts.training.train --batch_size=64 --gamma=0.999995 --optimizer=SGD --lr=0.5 --n_games=536870912 --config=2x2_example --seed=1
+srun --unbuffered python -m src.scripts.training.train --batch_size=64 --gamma=0.999995 --optimizer=SGD --lr=0.5 --n_games=536870912 --config=2x2_example --seed=1
 
 
 # 2x2 baseline (w/ --log_models)

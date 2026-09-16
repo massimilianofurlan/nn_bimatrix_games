@@ -1,3 +1,19 @@
+#### Avon environment
+
+From the repository directory on Avon:
+
+```bash
+module purge
+module load GCC/11.3.0 Python/3.10.4
+python3.10 -m venv .localenv
+source .localenv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install --index-url https://download.pytorch.org/whl/cu126 torch==2.13.0+cu126
+python -m pip install -r requirements.txt
+```
+
+The Slurm scripts use this environment.
+
 #### Training Baseline Models
 
 **2×2 Baseline**
