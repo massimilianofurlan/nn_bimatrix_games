@@ -134,8 +134,10 @@ if __name__ == "__main__":
     parser.add_argument('--n_traces', type=int, default=100, help='Trace lenght for Harsanyi-Selten linear tracing procedure')  
     parser.add_argument('--normal_vectors', type=str, default="[[], []]", help='Normal vectors to define subspaces. Example: "[[],[1,-1,-1,1]]"')
     parser.add_argument('--name', type=str, default=None, help='Dataset name')
+    parser.add_argument('--seed', type=int, default=1, help='Seed')
     args = parser.parse_args()
     args.normal_vectors = json.loads(args.normal_vectors)
+    torch.manual_seed(args.seed)
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     

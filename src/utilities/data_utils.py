@@ -82,7 +82,8 @@ def save_dataset(dataset, labels, statistics, summary_statistics, timestamp, arg
         'payoffs_space': args.payoffs_space,
         'game_class': args.game_class,
         'normal_vectors': args.normal_vectors,
-        'n_traces': args.n_traces
+        'n_traces': args.n_traces,
+        'seed': args.seed
     }
     metadata_filename = os.path.join(dataset_folder, "metadata.json")
     with open(metadata_filename, 'w') as f:
