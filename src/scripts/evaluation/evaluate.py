@@ -63,7 +63,7 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     ################ INDIVIDUAL RATIONALITY ################
     
     avg_regret = np.mean(regret_profile)
-    std_regret = np.std(regret_profile)
+    std_regret = np.std(regret_profile, dtype=np.float64)
     
     # check dominated and eliminated only when there is at least one eliminated
     #has_eliminated = n_rationalizable < n_actions        # player has eliminated
@@ -72,13 +72,13 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     #if n_has_dominated_mask > 0:
     # gamma-undominated
     avg_gamma_dominated = np.mean(mass_on_dominated)
-    std_gamma_dominated = np.std(mass_on_dominated)
+    std_gamma_dominated = np.std(mass_on_dominated, dtype=np.float64)
     freq_gamma_undominated = np.mean(mass_on_dominated < gamma)
     freq_double_gamma_undominated = np.mean(mass_on_dominated < gamma*2)
     gamma_dominated_quant = quantiles(mass_on_dominated)
     # gamma-rationalizable (strategy)
     avg_gamma_eliminated = np.mean(mass_on_eliminated)
-    std_gamma_eliminated = np.std(mass_on_eliminated)
+    std_gamma_eliminated = np.std(mass_on_eliminated, dtype=np.float64)
     freq_gamma_rationalizable = np.mean(mass_on_eliminated < gamma)
     freq_double_gamma_rationalizable_strategy = np.mean(mass_on_eliminated < gamma*2)
     gamma_eliminated_quant = quantiles(mass_on_eliminated)
@@ -88,18 +88,18 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     # payoff space distance to nash (regret)
     epsilon_distance_nash = np.max(regret_profile, axis=1)
     avg_epsilon_distance_nash = np.mean(epsilon_distance_nash)
-    std_epsilon_distance_nash = np.std(epsilon_distance_nash)
+    std_epsilon_distance_nash = np.std(epsilon_distance_nash, dtype=np.float64)
     max_regret_quant = quantiles(epsilon_distance_nash)
     
     # strategy space distance to nash (maximum supremum norm)
     avg_gamma_distance_nash = np.mean(gamma_distance_nash)
-    std_gamma_distance_nash = np.std(gamma_distance_nash)
+    std_gamma_distance_nash = np.std(gamma_distance_nash, dtype=np.float64)
     gamma_distance_nash_quant = quantiles(gamma_distance_nash)
     
     # strategy space distance to rationalizable profiles (mass on eliminated)
     gamma_distance_rationalizable_profile = np.max(mass_on_eliminated, axis=1)
     avg_gamma_distance_rationalizable_profile = np.mean(gamma_distance_rationalizable_profile)
-    std_gamma_distance_rationalizable_profile = np.std(gamma_distance_rationalizable_profile)
+    std_gamma_distance_rationalizable_profile = np.std(gamma_distance_rationalizable_profile, dtype=np.float64)
     gamma_distance_rationalizable_profile_quant = quantiles(gamma_distance_rationalizable_profile)
     
     # frequence gamma-nash
@@ -141,7 +141,7 @@ def print_evaluation_results(evaluation_output, statistics, mask, f = sys.stdout
     ################ DISTANCE FROM DEFAULT ################
     
     avg_dist_from_default = np.mean(dist_from_default)
-    std_dist_from_default = np.std(dist_from_default)
+    std_dist_from_default = np.std(dist_from_default, dtype=np.float64)
     dist_from_default_quant = quantiles(dist_from_default)
     
     ############### OUTPUT TO TERMINAL ################
