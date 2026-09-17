@@ -70,6 +70,8 @@ def evaluate(model1: torch.nn.Module, model2: torch.nn.Module, testing_set: np.n
     testing_set = torch.tensor(testing_set, device=device, dtype=torch.float32, requires_grad=False)
     
     n_games, n_players, n_actions, _ = testing_set.size() # n_actions may differ from model input size
+    if n_actions != model1.n_actions or n_actions != model2.n_actions:
+        raise NotImplementedError("Evaluating models and games with different numbers of actions is not currently supported.")
     testing_set = border_game(testing_set, n_actions, model1.n_actions)
     
     # Process labels
