@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.nn.init as init
+# import torch.nn.init as init
 
 '''
 class Normalize(nn.Module):
@@ -49,12 +49,12 @@ class MLP_Bimatrix(nn.Module):
         # combine layers
         self.network = nn.Sequential(*modules)
         # initialization
-        self.apply(self._initialize_weights)
+        # self.apply(self._initialize_weights)
 
-    def _initialize_weights(self, module):
-        if isinstance(module, nn.Linear):
-            init.kaiming_normal_(module.weight, nonlinearity='relu')
-            init.zeros_(module.bias)
+    # def _initialize_weights(self, module):
+    #     if isinstance(module, nn.Linear):
+    #         init.kaiming_normal_(module.weight, nonlinearity='relu')
+    #         init.zeros_(module.bias)
     
     def forward(self, G: torch.Tensor) -> torch.Tensor:
         return self.network(G)
